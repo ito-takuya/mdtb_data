@@ -83,9 +83,9 @@ cp $spec_files_folder/*.txt $my_study_folder/sessions/specs
 
 qunexContainer createSessionInfo \
     --sessionsfolder="$my_study_folder/sessions" \
-    --sessions="[0-9][0-9]_*" \
+    --sessions="02_a1" \
     --mapping="$my_study_folder/sessions/specs/mdtb2hcp_mapping.txt" \
-    --overwrite="no" \
+    --overwrite="yes" \
     --container="$qunex_container" 
 #    --scheduler="SLURM,time=0-01:00:00,ntasks=1,cpus-per-task=1,mem-per-cpu=8000,partition=day" 
 
@@ -96,7 +96,7 @@ if [ $execute -eq 1 ]; then
 
 qunexContainer createBatch \
     --sessionsfolder="$my_study_folder/sessions" \
-    --sessions="02_*" \
+    --sessions="02_a1" \
     --sourcefiles="session_hcp.txt" \
     --paramfile="$my_study_folder/sessions/specs/batch_legacy.txt" \
     --overwrite="yes" \
@@ -115,9 +115,13 @@ if [ $execute -eq 1 ]; then
 qunexContainer setupHCP \
     --sessionsfolder="$my_study_folder/sessions" \
     --sessions="$batch_file" \
+    --filename="standard" \
+    --folderstructure="hcpls" \
     --container="$qunex_container" 
+#qunexContainer setupHCP \
+#    --filename="original" \
+#    --container="$qunex_container" 
 
- #   --scheduler="SLURM,time=0-01:00:00,ntasks=1,cpus-per-task=1,mem-per-cpu=8000,partition=day" 
 
 fi
 
@@ -129,16 +133,27 @@ if [ $execute -eq 1 ]; then
 qunexContainer hcp1 \
     --sessionsfolder="$my_study_folder/sessions" \
     --sessions="$batch_file" \
+    --overwrite="no" \
     --container="$qunex_container" 
+    #--parsessions="4" \
 #    --scheduler="SLURM,time=1-00:00:00,ntasks=1,cpus-per-task=2,mem-per-cpu=8000,partition=day"
 
 fi
 
+execute=1
+if [ $execute -eq 1 ]; then
+
 qunexContainer hcp2 \
     --sessionsfolder="$my_study_folder/sessions" \
     --sessions="$batch_file" \
-    --container="$qunex_container" \
-    --scheduler="SLURM,time=2-00:00:00,ntasks=1,cpus-per-task=2,mem-per-cpu=8000,partition=week"
+    --overwrite="no" \
+    --container="$qunex_container" 
+    #--scheduler="SLURM,time=2-00:00:00,ntasks=1,cpus-per-task=2,mem-per-cpu=8000,partition=week"
+
+fi
+
+execute=0
+if [ $execute -eq 1 ]; then
 
 qunexContainer hcp3 \
     --sessionsfolder="$my_study_folder/sessions" \
