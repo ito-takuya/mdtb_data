@@ -25,7 +25,7 @@ qunex_container=/gpfs/project/fas/n3/software/Singularity/qunex_suite-latest.sif
 
 # -> the expected path of where the batch.txt folder for the study will be generated
 
-batch_file=$my_study_folder/processing/batch.txt
+batch_file=$my_study_folder/processing/batch_hcp.txt
 
 
 # --- create a study folder
@@ -83,7 +83,7 @@ cp $spec_files_folder/*.txt $my_study_folder/sessions/specs
 
 qunexContainer createSessionInfo \
     --sessionsfolder="$my_study_folder/sessions" \
-    --sessions="02_a1,02_b2" \
+    --sessions="02_b1" \
     --mapping="$my_study_folder/sessions/specs/mdtb2hcp_mapping.txt" \
     --overwrite="yes" \
     --container="$qunex_container" 
@@ -96,9 +96,10 @@ if [ $execute -eq 1 ]; then
 
 qunexContainer createBatch \
     --sessionsfolder="$my_study_folder/sessions" \
-    --sessions="02_a1,02_b2" \
+    --sessions="02_b1" \
     --sourcefiles="session_hcp.txt" \
-    --paramfile="$my_study_folder/sessions/specs/batch_legacy.txt" \
+    --targetfile="$batch_file" \
+    --paramfile="$my_study_folder/sessions/specs/batch_hcp.txt" \
     --overwrite="yes" \
     --container="$qunex_container" 
 
