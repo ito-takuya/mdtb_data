@@ -19,13 +19,21 @@ qunex_container=/gpfs/project/fas/n3/software/Singularity/qunex_suite_0.61.17.si
 
 # batch files
 batch_file_template=$my_study_folder/sessions/specs/batch_mdtb_legacy.txt
-batch_file=$my_study_folder/processing/batch_turnkey_2fmapmag.txt
+batch_directory=$my_study_folder/processing 
+
 # session IDs
 #sessions="sub-02/ses-a1,sub-02/ses-a2,sub-02/ses-b1,sub-02/ses-b2"
 subjects="sub-02 sub-03 sub-04 sub-06 sub-09 sub-12 sub-15 sub-18 sub-20 sub-22 sub-25 sub-27 sub-29 sub-31 sub-02 sub-04 sub-08 sub-10 sub-14 sub-17 sub-19 sub-21 sub-24 sub-26 sub-28 sub-30"
 session_suffixes="a1 a2 b1 b2"
 sessions="02_a1,02_a2,02_b1,02_b2,03_a1,03_a2,03_b1,03_b2,04_a1,04_a2,04_b1,04_b2,06_a1,06_a2,06_b1,06_b2,09_a1,09_a2,09_b1,09_b2,12_a1,12_a2,12_b1,12_b2,15_a1,15_a2,15_b1,15_b2,18_a1,18_a2,18_b1,18_b2,20_a1,20_a2,20_b1,20_b2,22_a1,22_a2,22_b1,22_b2,25_a1,25_a2,25_b1,25_b2,27_a1,27_a2,27_b1,27_b2,29_a1,29_a2,29_b1,29_b2,31_a1,31_a2,31_b1,31_b2,02_a1,02_a2,02_b1,02_b2,04_a1,04_a2,04_b1,04_b2,08_a1,08_a2,08_b1,08_b2,10_a1,10_a2,10_b1,10_b2,14_a1,14_a2,14_b1,14_b2,17_a1,17_a2,17_b1,17_b2,19_a1,19_a2,19_b1,19_b2,21_a1,21_a2,21_b1,21_b2,24_a1,24_a2,24_b1,24_b2,26_a1,26_a2,26_b1,26_b2,28_a1,28_a2,28_b1,28_b2,30_a1,30_a2,30_b1,30_b2"
 sessions_arr="02_a1 02_a2 02_b1 02_b2 03_a1 03_a2 03_b1 03_b2 04_a1 04_a2 04_b1 04_b2 06_a1 06_a2 06_b1 06_b2 09_a1 09_a2 09_b1 09_b2 12_a1 12_a2 12_b1 12_b2 15_a1 15_a2 15_b1 15_b2 18_a1 18_a2 18_b1 18_b2 20_a1 20_a2 20_b1 20_b2 22_a1 22_a2 22_b1 22_b2 25_a1 25_a2 25_b1 25_b2 27_a1 27_a2 27_b1 27_b2 29_a1 29_a2 29_b1 29_b2 31_a1 31_a2 31_b1 31_b2 02_a1 02_a2 02_b1 02_b2 04_a1 04_a2 04_b1 04_b2 08_a1 08_a2 08_b1 08_b2 10_a1 10_a2 10_b1 10_b2 14_a1 14_a2 14_b1 14_b2 17_a1 17_a2 17_b1 17_b2 19_a1 19_a2 19_b1 19_b2 21_a1 21_a2 21_b1 21_b2 24_a1 24_a2 24_b1 24_b2 26_a1 26_a2 26_b1 26_b2 28_a1 28_a2 28_b1 28_b2 30_a1 30_a2 30_b1 30_b2"
+sessions="08_a1,17_a2"
+sessions_arr="08_a1 17_a2"
+
+# Session names, excluding 08_a1 and 17_a2
+sessions="02_a1,02_a2,02_b1,02_b2,03_a1,03_a2,03_b1,03_b2,04_a1,04_a2,04_b1,04_b2,06_a1,06_a2,06_b1,06_b2,09_a1,09_a2,09_b1,09_b2,12_a1,12_a2,12_b1,12_b2,15_a1,15_a2,15_b1,15_b2,18_a1,18_a2,18_b1,18_b2,20_a1,20_a2,20_b1,20_b2,22_a1,22_a2,22_b1,22_b2,25_a1,25_a2,25_b1,25_b2,27_a1,27_a2,27_b1,27_b2,29_a1,29_a2,29_b1,29_b2,31_a1,31_a2,31_b1,31_b2,02_a1,02_a2,02_b1,02_b2,04_a1,04_a2,04_b1,04_b2,08_a2,08_b1,08_b2,10_a1,10_a2,10_b1,10_b2,14_a1,14_a2,14_b1,14_b2,17_a1,17_b1,17_b2,19_a1,19_a2,19_b1,19_b2,21_a1,21_a2,21_b1,21_b2,24_a1,24_a2,24_b1,24_b2,26_a1,26_a2,26_b1,26_b2,28_a1,28_a2,28_b1,28_b2,30_a1,30_a2,30_b1,30_b2"
+sessions_arr="02_a1 02_a2 02_b1 02_b2 03_a1 03_a2 03_b1 03_b2 04_a1 04_a2 04_b1 04_b2 06_a1 06_a2 06_b1 06_b2 09_a1 09_a2 09_b1 09_b2 12_a1 12_a2 12_b1 12_b2 15_a1 15_a2 15_b1 15_b2 18_a1 18_a2 18_b1 18_b2 20_a1 20_a2 20_b1 20_b2 22_a1 22_a2 22_b1 22_b2 25_a1 25_a2 25_b1 25_b2 27_a1 27_a2 27_b1 27_b2 29_a1 29_a2 29_b1 29_b2 31_a1 31_a2 31_b1 31_b2 02_a1 02_a2 02_b1 02_b2 04_a1 04_a2 04_b1 04_b2 08_a2 08_b1 08_b2 10_a1 10_a2 10_b1 10_b2 14_a1 14_a2 14_b1 14_b2 17_a1 17_b1 17_b2 19_a1 19_a2 19_b1 19_b2 21_a1 21_a2 21_b1 21_b2 24_a1 24_a2 24_b1 24_b2 26_a1 26_a2 26_b1 26_b2 28_a1 28_a2 28_b1 28_b2 30_a1 30_a2 30_b1 30_b2"
+
 
 # - Type of QuNex Turnkey run
 RUNTURNKEY_TYPE="local"
@@ -129,27 +137,81 @@ if [ $execute -eq 1 ]; then
 
 fi
 
-# MOST IMPORTANT STEPS - RUN PREPROCESSING VIA TURNKEY on scheduler
-# - QuNex Turnkey steps
-runturnkey_hcp="hcp1,hcp2,hcp3,hcp4,hcp5,runQC_T1w,runQC_T2w,runQC_Myelin,runQC_BOLD,mapHCPData,createBOLDBrainMasks,createBOLDStats"
-execute=1
+
+#### Now, create a batch file for every session separately
+execute=0
 if [ $execute -eq 1 ]; then
 
-qunexContainer runTurnkey \
-    --batchfile="$batch_file_template" \
-    --turnkeytype="${RUNTURNKEY_TYPE}" \
-    --path="$my_study_folder" \
-    --workingdir="$training_folder" \
-    --sessions="$sessions" \
-    --sessionsfoldername="sessions" \
-    --mappingfile="$my_study_folder/sessions/specs/mdtb2hcp_mapping_2fmapmag.txt" \
-    --projectname="$my_study" \
-    --turnkeysteps="$runturnkey_hcp" \
-    --overwritestep="no" \
-    --container="$qunex_container" \
-    --scheduler="SLURM,time=3-00:00:00,ntasks=1,cpus-per-task=1,mem-per-cpu=8000,partition=pi_anticevic,partition=week,account=anticevic" 
+for sess in $sessions_arr
+do
+    qunexContainer createBatch \
+        --sessionsfolder="$my_study_folder/sessions" \
+        --sessions="$sess" \
+        --sourcefiles="session_hcp.txt" \
+        --paramfile="$my_study_folder/sessions/specs/batch_mdtb_legacy.txt" \
+        --targetfile="$batch_directory/${sess}_batch.txt" \
+        --overwrite="yes" \
+        --container="$qunex_container" 
+done
 
 fi
+
+# MOST IMPORTANT STEPS - RUN PREPROCESSING VIA TURNKEY on scheduler
+# - QuNex Turnkey steps
+runturnkey_hcp="hcp1,hcp2,hcp3,hcp4,hcp5"
+execute=0
+if [ $execute -eq 1 ]; then
+
+for sess in $sessions_arr
+do
+    qunexContainer runTurnkey \
+        --batchfile="$batch_directory/${sess}_batch.txt" \
+        --local_batchfile="$batch_directory/${sess}_batch.txt" \
+        --turnkeytype="${RUNTURNKEY_TYPE}" \
+        --path="$my_study_folder" \
+        --workingdir="$training_folder" \
+        --sessions="$sess" \
+        --sessionsid="$sess" \
+        --sessionsfoldername="sessions" \
+        --mappingfile="$my_study_folder/sessions/specs/mdtb2hcp_mapping_2fmapmag.txt" \
+        --projectname="$my_study" \
+        --turnkeysteps="$runturnkey_hcp" \
+        --overwritestep="no" \
+        --container="$qunex_container" \
+        --scheduler="SLURM,time=3-00:00:00,ntasks=1,cpus-per-task=1,mem-per-cpu=8000,partition=pi_anticevic,partition=week,account=anticevic" 
+
+done
+fi
+
+# run QC turnkey 
+# - QuNex Turnkey steps
+#runturnkey_hcp="runQC_T1w,runQC_T2w,runQC_Myelin,runQC_BOLD,mapHCPData,createBOLDBrainMasks,createBOLDStats"
+runturnkey_hcp="runQC_T1w,runQC_BOLD,mapHCPData,createBOLDBrainMasks,createBOLDStats"
+#runturnkey_hcp="runQC_BOLD"
+execute=0
+if [ $execute -eq 1 ]; then
+
+for sess in $sessions_arr
+do
+    qunexContainer runTurnkey \
+        --batchfile="$batch_directory/${sess}_batch.txt" \
+        --local_batchfile="$batch_directory/${sess}_batch.txt" \
+        --turnkeytype="${RUNTURNKEY_TYPE}" \
+        --path="$my_study_folder" \
+        --workingdir="$training_folder" \
+        --sessions="$sess" \
+        --sessionsid="$sess" \
+        --sessionsfoldername="sessions" \
+        --mappingfile="$my_study_folder/sessions/specs/mdtb2hcp_mapping_2fmapmag.txt" \
+        --projectname="$my_study" \
+        --turnkeysteps="$runturnkey_hcp" \
+        --overwritestep="no" \
+        --container="$qunex_container" \
+        --scheduler="SLURM,time=1-00:00:00,ntasks=1,cpus-per-task=1,mem-per-cpu=8000,partition=pi_anticevic,partition=day,account=anticevic" 
+
+done
+fi
+
 
 ## Extra custom code -- need to resample aparc+aseg to appropriate create masks and extract nuisance signals
 execute=0
@@ -157,21 +219,27 @@ if [ $execute -eq 1 ]; then
 
     for session in $sessions_arr
     do
+        echo "Resampling freesurfer output for session $session"
         3dresample -input $my_study_folder/sessions/$session/images/segmentation/freesurfer/mri/aparc+aseg_bold.nii.gz -prefix $my_study_folder/sessions/$session/images/segmentation/freesurfer/mri/aparc+aseg_bold_3mm.nii.gz -master $my_study_folder/sessions/$session/images/segmentation/boldmasks/bold8_frame1_brain_mask.nii.gz
         mv -v $my_study_folder/sessions/$session/images/segmentation/freesurfer/mri/aparc+aseg_bold.nii.gz $my_study_folder/sessions/$session/images/segmentation/freesurfer/mri/aparc+aseg_bold_orig.nii.gz
         mv -v $my_study_folder/sessions/$session/images/segmentation/freesurfer/mri/aparc+aseg_bold_3mm.nii.gz $my_study_folder/sessions/$session/images/segmentation/freesurfer/mri/aparc+aseg_bold.nii.gz
+        echo "DONE for session $session"
     done
 
 fi
 
-execute=0
+execute=1
 if [ $execute -eq 1 ]; then
 
-qunexContainer extractNuisanceSignal \
-    --sessionsfolder="$my_study_folder/sessions" \
-    --sessions="$batch_file" \
-    --overwrite='yes' \
-    --container="$qunex_container" 
+    for session in $sessions_arr
+    do  
+        qunexContainer extractNuisanceSignal \
+            --sessionsfolder="$my_study_folder/sessions" \
+            --sessions="${batch_directory}/${session}_batch.txt" \
+            --overwrite='yes' \
+            --container="$qunex_container" \
+            --scheduler="SLURM,time=1-00:00:00,ntasks=1,cpus-per-task=1,mem-per-cpu=8000,partition=pi_anticevic,partition=day,account=anticevic" 
+    done
 fi
 
 

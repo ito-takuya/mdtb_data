@@ -124,23 +124,44 @@ def postProcRegression(nproc=5, model='24pXaCompCorXVolterra',spikeReg=False,zsc
 #########################################
 # Helper functions
 
-def _postProcRegression(subj, task, taskModel=None, nuisModel='qunex', nproc=8):
+def _postProcRegression(sessions,runs,task=None, taskModel=None, nuisModel='qunex', nproc=8):
     """
     This function runs a post processing regression on a single subject
     Will only regress out task-timing, using either a canonical HRF model or FIR model
     Input parameters:
-        subj        :   subject number as a string
+        sessions    :   a list/array of strings specifying session IDs
+        runs        :   a list/array of strings specifying run IDs
         task        :   task or session name (?) 
         taskModel   :   regression model (default: None (nuisance only) ['canonicalTask',firTask'])
         nproc       :   number of processes to use via multiprocessing
     """
 
-    h5f = h5py.File(outputdir + subj + '_glmOutput_data.h5','a')
+    data = []
+    nuisanceRegressors = []
+    for sess in sessions:
+        for run in runs:
+            tmp = loadRawParcellatedData(sess,run)
+            num_timepoints = tmp.shape[0]
+            data.extend(tmp)
+            nuisanceRegressors.extend(loadNuisanceRegressors(sess,run,num_timepoints)
 
-    run1 = h5f[task+'_RL']['nuisanceReg_resid_'+nuisModel][:].copy()
-    run2 = h5f[task+'_LR']['nuisanceReg_resid_'+nuisModel][:].copy()
-    data = np.hstack((run1,run2))
-    h5f.close()
+    
+
+    tMask = np.ones((data.shape[1],))
+    tMask[:framesToSkip] = 0
+
+    # Skip frames
+    data = data[:,framesToSkip:]
+    
+    # Demean each run
+    data = signal.detrend(data,axis=1,type='constant')
+    # Detrend each run
+    data = signal.detrend(data,axis=1,type='linear')
+    tMask = np.asarray(tMask,dtype=bool)
+    
+    nROIs = data.shape[0]
+
+
 
     # Identify number of ROIs
     nROIs = data.shape[0]
@@ -148,9 +169,13 @@ def _postProcRegression(subj, task, taskModel=None, nuisModel='qunex', nproc=8):
     nTRs = data.shape[1]
 
     # Load regressors for data
-    X = loadTaskTiming(subj, task, taskModel=taskModel, nRegsFIR=25)
+    if task!=None:
+        print('Running standard nuisance regression')
+        #X = loadTaskTiming(subj, task, taskModel=taskModel, nRegsFIR=25)
 
-    taskRegs = X['taskRegressors'] # These include the two binary regressors
+        taskRegs = X['taskRegressors'] # These include the two binary regressors
+        nuisanceRegressors = loadNuisanceRegressors(subj,
+        allregressors = 
 
     betas, resid = regression.regression(data.T, taskRegs, constant=True)
     
@@ -297,14 +322,13 @@ def loadTaskTiming(subj, task, taskModel='canonical', nRegsFIR=25):
 
     return output
 
-def loadNuisanceRegressors(subj, run, inputdata, outputdir,  model='qunex', spikeReg=False, zscore=False):
+def loadNuisanceRegressors(sess, run, num_timepoints, model='qunex', spikeReg=False, zscore=False):
     """
-    This function runs nuisance regression on the Glasser Parcels (360) on a single subjects run
+    This function runs nuisance regression on the Glasser Parcels (360) on a single sessects run
     Will only regress out noise parameters given the model choice (see below for model options)
     Input parameters:
-        subj    : subject number as a string
+        sess    : sess number as a string
         run     : task run
-        outputdir: Directory for GLM output, as an h5 file (each run will be contained within each h5)
         model   : model choices for linear regression. Models include:
                     1. 24pXaCompCorXVolterra [default]
                         Variant from Ciric et al. 2017. 
@@ -338,30 +362,14 @@ def loadNuisanceRegressors(subj, run, inputdata, outputdir,  model='qunex', spik
                             - White matter, white matter derivatives, and their quadratics (4 regressors)
                             - Ventricles, ventricle derivatives, and their quadratics (4 regressors)
         spikeReg : spike regression (Satterthwaite et al. 2013) [True/False]
-                        Note, inclusion of this will add additional set of regressors, which is custom for each subject/run
+                        Note, inclusion of this will add additional set of regressors, which is custom for each session/run
         zscore   : Normalize data (across time) prior to fitting regression
         nproc = number of processes to use via multiprocessing
     """
 
-    data = inputdata
-
-    tMask = np.ones((data.shape[1],))
-    tMask[:framesToSkip] = 0
-
-    # Skip frames
-    data = data[:,framesToSkip:]
-    
-    # Demean each run
-    data = signal.detrend(data,axis=1,type='constant')
-    # Detrend each run
-    data = signal.detrend(data,axis=1,type='linear')
-    tMask = np.asarray(tMask,dtype=bool)
-    
-    nROIs = data.shape[0]
-
     # Load nuisance regressors for this data
     if model=='qunex':
-        nuisdir = datadir + 'sessions/' + subj + '/images/functional/movement'
+        nuisdir = datadir + 'sessions/' + sess + '/images/functional/movement'
         # Load physiological signals
         data = pd.read_csv(nuisdir + run + '.nuisance',sep='\s+')
         ventricles_signal = data.V.values[:-2]
@@ -401,7 +409,7 @@ def loadNuisanceRegressors(subj, run, inputdata, outputdir,  model='qunex', spik
 
     else:
         # load all nuisance regressors for all other regression models
-        h5f = h5py.File(nuis_reg_dir + subj + '_nuisanceRegressors.h5','r') 
+        h5f = h5py.File(nuis_reg_dir + sess + '_nuisanceRegressors.h5','r') 
         # Motion parameters + derivatives
         motion_parameters = h5f[run]['motionParams'][:].copy()
         motion_parameters_deriv = h5f[run]['motionParams_deriv'][:].copy()
@@ -503,7 +511,7 @@ def loadNuisanceRegressors(subj, run, inputdata, outputdir,  model='qunex', spik
             motion_spikes = h5f[run]['motionSpikes'][:].copy()
             nuisanceRegressors = np.hstack((nuisanceRegressors,motion_spikes))
         except:
-            print 'Spike regression option was chosen... but no motion spikes for subj', subj, '| run', run, '!'
+            print 'Spike regression option was chosen... but no motion spikes for sess', sess, '| run', run, '!'
         # Update the model name - to keep track of different model types for output naming
         model = model + '_spikeReg' 
 
@@ -516,28 +524,12 @@ def loadNuisanceRegressors(subj, run, inputdata, outputdir,  model='qunex', spik
     # Skip first 5 frames of nuisanceRegressors, too
     nuisanceRegressors = nuisanceRegressors[framesToSkip:,:].copy()
     
-#    betas, resid = regression.regression(data.T, nuisanceRegressors, constant=True)
-#    
-#    betas = betas.T # Exclude nuisance regressors
-#    residual_ts = resid.T
-#    
-#    if zscore:
-#        residual_ts = stats.zscore(residual_ts,axis=1)
-#
-#    outname1 = run + '/nuisanceReg_resid_' + model
-#    outname2 = run + '/nuisanceReg_betas_' + model
-#
-#    outputfilename = outputdir + subj + '_glmOutput_data.h5'
-#    h5f = h5py.File(outputfilename,'a')
-#    try:
-#        h5f.create_dataset(outname1,data=residual_ts)
-#        h5f.create_dataset(outname2,data=betas)
-#    except:
-#        del h5f[outname1], h5f[outname2]
-#        h5f.create_dataset(outname1,data=residual_ts)
-#        h5f.create_dataset(outname2,data=betas)
-#    h5f.close()
-
     return nuisanceRegressors
 
-
+def loadRawParcellatedData(sess,run,datadir='/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/sessions/'):
+    """
+    Load in parcellated data for given session and run
+    """
+    datafile = datadir + sess + '/images/functional/' + run + '_Atlas.LR.Parcels.32k_fs_LR.ptseries.nii'
+    data = nib.load(datafile).get_data()
+    return data
