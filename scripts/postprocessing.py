@@ -41,6 +41,8 @@ import time
 import warnings
 warnings.simplefilter('ignore', np.ComplexWarning)
 import regression
+from sklearn.linear_model import LinearRegression
+import glob
 
 ## Define GLOBAL variables (variables accessible to all functions
 # Define base data directory
@@ -65,11 +67,9 @@ subIDs=['02','03','04','06','08','09','10','12','14','15','18','20','22','25','2
 sessionIDs=['_a1','_a2','_b1','_b2']
 
 
-def rsNuisRegression(model='qunex',spikeReg=False,zscore=False):
+def taskGLM(taskmodel='canonical',model='qunex',spikeReg=False,zscore=False):
     """
-    Function to perform nuisance regression on each rest run separately
-    This uses parallel processing, but parallelization occurs within each subject
-    Each subject runs regression on each region/voxel in parallel, thus iterating subjects and runs serially
+    Function to perform a task GLM (in conjunction with nuisance regression on each rest run separately)
     
     Input parameters:
         model   : model choices for linear regression. Models include:
@@ -107,7 +107,67 @@ def rsNuisRegression(model='qunex',spikeReg=False,zscore=False):
         spikeReg : spike regression (Satterthwaite et al. 2013) [True/False]
                         Note, inclusion of this will add additional set of regressors, which is custom for each subject/run
         zscore   : Normalize data (across time) prior to fitting regression
-        nproc = number of processes to use via multiprocessing
+    """
+    outputdir = '../../derivatives/postprocessing/'
+    # Iterate through each subject
+    runs = ['bold1','bold2','bold3','bold4','bold5','bold6','bold7','bold8']
+
+    for subj in subIDs:
+        # Note all Rest fMRI runs are in ${sub}_b2
+        # Note rest runs are bold9 and bold10.nii.gz
+        # Iterate through each run
+        sess = subj + '_b2'
+        for run in runs:
+            print ('Running regression on session', sess, '| run', run)
+            print ('\tModel:', model, 'with spikeReg:', spikeReg, '| zscore:', zscore)
+            # Run nuisance regression for this subject's run, using a helper function defined below
+            # Data will be output in 'outputdir', defined above
+            outputfilename = outputdir + sess + '_rsfMRI_' + model + '_' + run + '.h5'
+            try: 
+                _postProcRegression([sess], [run], outputfilename, task=None, taskModel=None, nuisModel=model)
+            except:
+                print('Looks like no files')
+
+def rsNuisRegression(model='qunex',spikeReg=False,zscore=False):
+    """
+    Function to perform nuisance regression on each rest run separately
+    
+    Input parameters:
+        model   : model choices for linear regression. Models include:
+                    1. 24pXaCompCorXVolterra [default]
+                        Variant from Ciric et al. 2017. 
+                        Includes (64 regressors total):
+                            - Movement parameters (6 directions; x, y, z displacement, and 3 rotations) and their derivatives, and their quadratics (24 regressors)
+                            - aCompCor (5 white matter and 5 ventricle components) and their derivatives, and their quadratics (40 regressors)
+                    2. 18p (the lab's legacy default)
+                        Includes (18 regressors total):
+                            - Movement parameters (6 directions) and their derivatives (12 regressors)
+                            - Global signal and its derivative (2 regressors)
+                            - White matter signal and its derivative (2 regressors)
+                            - Ventricles signal and its derivative (2 regressors)
+                    3. 16pNoGSR (the legacy default, without GSR)
+                        Includes (16 regressors total):
+                            - Movement parameters (6 directions) and their derivatives (12 regressors)
+                            - White matter signal and its derivative (2 regressors)
+                            - Ventricles signal and its derivative (2 regressors)
+                    4. 12pXaCompCor (Typical motion regression, but using CompCor (noGSR))
+                        Includes (32 regressors total):
+                            - Movement parameters (6 directions) and their derivatives (12 regressors)
+                            - aCompCor (5 white matter and 5 ventricle components) and their derivatives (no quadratics; 20 regressors)
+                    5. 36p (State-of-the-art, according to Ciric et al. 2017)
+                        Includes (36 regressors total - same as legacy, but with quadratics):
+                            - Movement parameters (6 directions) and their derivatives and quadratics (24 regressors)
+                            - Global signal and its derivative and both quadratics (4 regressors)
+                            - White matter signal and its derivative and both quadratics (4 regressors)
+                            - Ventricles signal and its derivative (4 regressors)
+                    6. qunex (similar to 16p no gsr, but a variant) -- uses qunex output time series 
+                        Includes (32 regressors total):
+                            - Movement parameters (6 directions), their derivatives, and all quadratics (24 regressors)
+                            - White matter, white matter derivatives, and their quadratics (4 regressors)
+                            - Ventricles, ventricle derivatives, and their quadratics (4 regressors)
+        spikeReg : spike regression (Satterthwaite et al. 2013) [True/False]
+                        Note, inclusion of this will add additional set of regressors, which is custom for each subject/run
+        zscore   : Normalize data (across time) prior to fitting regression
     """
     outputdir = '../../derivatives/postprocessing/'
     # Iterate through each subject
@@ -160,10 +220,10 @@ def _postProcRegression(sessions,runs,outputfilename,task=None, taskModel=None, 
             # Skip frames
             rundata = rundata[tMask,:]
             
-            # Demean each run
-            rundata = signal.detrend(rundata,axis=0,type='constant')
-            # Detrend each run
-            rundata = signal.detrend(rundata,axis=0,type='linear')
+#            # Demean each run
+#            rundata = signal.detrend(rundata,axis=0,type='constant')
+#            # Detrend each run
+#            rundata = signal.detrend(rundata,axis=0,type='linear')
             
             # Load in nuisance regressors
             nuisregs = loadNuisanceRegressors(sess,run,num_timepoints)
@@ -188,7 +248,13 @@ def _postProcRegression(sessions,runs,outputfilename,task=None, taskModel=None, 
         taskRegs = X['taskRegressors'] # These include the two binary regressors
 
 
-    betas, resid = regression.regression(data, allRegressors, constant=True)
+    #betas, resid = regression.regression(data, allRegressors, constant=True)
+
+    reg = LinearRegression().fit(allRegressors,data)
+    betas = reg.coef_
+    y_pred = reg.predict(allRegressors)
+    resid = data - y_pred
+    resid = data
     
     betas = betas.T # Exclude nuisance regressors
     residual_ts = resid.T
@@ -206,38 +272,55 @@ def _postProcRegression(sessions,runs,outputfilename,task=None, taskModel=None, 
         h5f.create_dataset(outname2,data=betas)
     h5f.close()
 
-def loadTaskTiming(subj, task, taskModel='canonical', nRegsFIR=25):
-    nRunsPerTask = 2
+def loadTaskTiming(sess, run, num_timepoints, taskModel='canonical', nRegsFIR=25):
+    """
+    Loads task timings for each run separately
+    """
+    trLength = 1.0
+    subj = sess[:2] # first 2 characters form the subject ID
+    sess_id = sess[-2:] # last 2 characters form the session
+    tasktime_dir = datadir + 'sessions/' + sess + '/bids/func/'
+    stimfile = glob.glob(tasktime_dir + 'sub-' + subj + '_ses-' + sess_id + '*' + str(run) + '_events.tsv')[0]
+    stimdf = pd.read_csv(stimfile,sep='\t') 
+    conditions = np.unique(stimdf.trial_type.values)
+    conditions = list(conditions)
+    conditions.remove('Instruct') # Remove this - not a condition (and no timing information)
+    # conditions.remove('Rest')
+    tasks = np.unique(stimdf.taskName.values)
 
-    taskkey = task[6:] # Define string identifier for tasks
-    taskEVs = taskEV_Identifier[taskkey]
-    stimMat = np.zeros((taskLength[taskkey]*nRunsPerTask,len(taskEV_Identifier[taskkey])))
-    stimdir = basedir + 'timingfiles3/'
-    stimfiles = glob.glob(stimdir + subj + '*EV*' + taskkey + '*1D')
-    
-    for stimcount in range(len(taskEVs)):
-        ev = taskEVs[stimcount] + 1
-        stimfile = glob.glob(stimdir + subj + '*EV' + str(ev) + '_' + taskkey + '*1D')
-        stimMat[:,stimcount] = np.loadtxt(stimfile[0])
+    stim_mat = np.zeros((num_timepoints,len(conditions)))
+    stim_index = []
 
-    nTRsPerRun = int(stimMat.shape[0]/2.0)
+    stimcount = 0
+    for cond in conditions:
+        conddf = stimdf.loc[stimdf.trial_type==cond]
+        for ind in conddf.index:
+            trstart = int(conddf.startTRreal[ind])
+            duration = conddf.duration[ind]
+            trend = int(trstart + duration)
+            stim_mat[trstart:trend,stimcount] = 1.0
+
+        stim_index.append(cond)
+        stimcount += 1 # go to next condition
+
 
     ## 
     if taskModel=='FIR':
+        ## TODO
         # Convolve taskstim regressors based on SPM canonical HRF (likely period of task-induced activity)
 
         ## First set up FIR design matrix
         stim_index = []
         taskStims_FIR = [] 
-        for stim in range(stimMat.shape[1]):
+        for stim in range(stim_mat.shape[1]):
             taskStims_FIR.append([])
-            time_ind = np.where(stimMat[:,stim]==1)[0]
+            time_ind = np.where(stim_mat[:,stim]==1)[0]
             blocks = _group_consecutives(time_ind) # Get blocks (i.e., sets of consecutive TRs)
             # Identify the longest block - set FIR duration to longest block
             maxRegsForBlocks = 0
             for block in blocks:
                 if len(block) > maxRegsForBlocks: maxRegsForBlocks = len(block)
-            taskStims_FIR[stim] = np.zeros((stimMat.shape[0],maxRegsForBlocks+nRegsFIR)) # Task timing for this condition is TR x length of block + FIR lag
+            taskStims_FIR[stim] = np.zeros((stim_mat.shape[0],maxRegsForBlocks+nRegsFIR)) # Task timing for this condition is TR x length of block + FIR lag
             stim_index.extend(np.repeat(stim,maxRegsForBlocks+nRegsFIR))
         stim_index = np.asarray(stim_index)
 
@@ -249,8 +332,8 @@ def loadTaskTiming(subj, task, taskModel='canonical', nRegsFIR=25):
             trstart = trcount
             trend = trstart + nTRsPerRun
                 
-            for stim in range(stimMat.shape[1]):
-                time_ind = np.where(stimMat[:,stim]==1)[0]
+            for stim in range(stim_mat.shape[1]):
+                time_ind = np.where(stim_mat[:,stim]==1)[0]
                 blocks = _group_consecutives(time_ind) # Get blocks (i.e., sets of consecutive TRs)
                 for block in blocks:
                     reg = 0
@@ -274,9 +357,9 @@ def loadTaskTiming(subj, task, taskModel='canonical', nRegsFIR=25):
             trcount += nTRsPerRun
         
 
-        taskStims_FIR2 = np.zeros((stimMat.shape[0],1))
+        taskStims_FIR2 = np.zeros((stim_mat.shape[0],1))
         task_index = []
-        for stim in range(stimMat.shape[1]):
+        for stim in range(stim_mat.shape[1]):
             task_index.extend(np.repeat(stim,taskStims_FIR[stim].shape[1]))
             taskStims_FIR2 = np.hstack((taskStims_FIR2,taskStims_FIR[stim]))
 
@@ -293,43 +376,25 @@ def loadTaskTiming(subj, task, taskModel='canonical', nRegsFIR=25):
     elif taskModel=='canonical':
         ## 
         # Convolve taskstim regressors based on SPM canonical HRF (likely period of task-induced activity)
-        taskStims_HRF = np.zeros(stimMat.shape)
+        taskStims_HRF = np.zeros(stim_mat.shape)
         spm_hrfTS = spm_hrf(trLength,oversampling=1)
        
-        trcount = 0
-        for run in range(nRunsPerTask):
-            trstart = trcount
-            trend = trstart + nTRsPerRun
 
-            for stim in range(stimMat.shape[1]):
+        for stim in range(stim_mat.shape[1]):
 
-                # Perform convolution
-                tmpconvolve = np.convolve(stimMat[trstart:trend,stim],spm_hrfTS)
-                tmpconvolve_run = tmpconvolve[:nTRsPerRun] # Make sure to cut off at the end of the run
-                taskStims_HRF[trstart:trend,stim] = tmpconvolve_run
+            # Perform convolution
+            tmpconvolve = np.convolve(stim_mat[:,stim],spm_hrfTS)
+            taskStims_HRF[:,stim] = tmpconvolve[:num_timepoints]
 
-            trcount += nTRsPerRun
 
         taskRegressors = taskStims_HRF.copy()
     
-        stim_index = []
-        for stim in range(stimMat.shape[1]):
-            stim_index.append(stim)
-        stim_index = np.asarray(stim_index)
-
 
     # Create temporal mask (skipping which frames?)
-    tMask = []
-    tmp = np.ones((nTRsPerRun,), dtype=bool)
-    tmp[:framesToSkip] = False
-    tMask.extend(tmp)
-    tMask.extend(tmp)
-    tMask = np.asarray(tMask,dtype=bool)
-
     output = {}
     # Commented out since we demean each run prior to loading data anyway
-    output['taskRegressors'] = taskRegressors[tMask,:]
-    output['taskDesignMat'] = stimMat[tMask,:]
+    output['taskRegressors'] = taskRegressors
+    output['taskDesignMat'] = stim_mat
     output['stimIndex'] = stim_index
 
     return output
@@ -417,6 +482,8 @@ def loadNuisanceRegressors(sess, run, num_timepoints, model='qunex', spikeReg=Fa
         physiological_params = np.vstack((wm_signal,wm_signal_deriv,ventricles_signal,ventricles_signal_deriv)).T
         physiological_params_quadratics = physiological_params**2
         nuisanceRegressors = np.hstack((motionparams,motionparams_quadratics,motionparams_deriv,motionparams_deriv_quadratics,physiological_params,physiological_params_quadratics))
+
+        nuisanceRegressors = np.random.random((len(global_signal),3))
 
     else:
         # load all nuisance regressors for all other regression models
