@@ -63,11 +63,10 @@ outputdir = datadir + 'hcpPostProcCiric/'
 sessions=['02_a1','02_a2','02_b1','02_b2','03_a1','03_a2','03_b1','03_b2','04_a1','04_a2','04_b1','04_b2','06_a1','06_a2','06_b1','06_b2','09_a1','09_a2','09_b1','09_b2','12_a1','12_a2','12_b1','12_b2','15_a1','15_a2','15_b1','15_b2','18_a1','18_a2','18_b1','18_b2','20_a1','20_a2','20_b1','20_b2','22_a1','22_a2','22_b1','22_b2','25_a1','25_a2','25_b1','25_b2','27_a1','27_a2','27_b1','27_b2','29_a1','29_a2','29_b1','29_b2','31_a1','31_a2','31_b1','31_b2','02_a1','02_a2','02_b1','02_b2','04_a1','04_a2','04_b1','04_b2','08_a1','08_a2','08_b1','08_b2','10_a1','10_a2','10_b1','10_b2','14_a1','14_a2','14_b1','14_b2','17_a1','17_a2','17_b1','17_b2','19_a1','19_a2','19_b1','19_b2','21_a1','21_a2','21_b1','21_b2','24_a1','24_a2','24_b1','24_b2','26_a1','26_a2','26_b1','26_b2','28_a1','28_a2','28_b1','28_b2','30_a1','30_a2','30_b1','30_b2']
 
 subIDs=['02','03','04','06','08','09','10','12','14','15','18','20','22','25','27','29','31','17','19','21','24','26','28','30']
-#subIDs=['02']
 sessionIDs=['_a1','_a2','_b1','_b2']
 
 
-def taskGLM(taskmodel='canonical',model='qunex',spikeReg=False,zscore=False):
+def taskGLM(taskmodel='canonical',model='qunex',space='parcellated',spikeReg=False,zscore=False):
     """
     Function to perform a task GLM (in conjunction with nuisance regression on each rest run separately)
     
@@ -110,25 +109,27 @@ def taskGLM(taskmodel='canonical',model='qunex',spikeReg=False,zscore=False):
     """
     outputdir = '../../derivatives/postprocessing/'
     # Iterate through each subject
-    runs = ['bold1','bold2','bold3','bold4','bold5','bold6','bold7','bold8']
+    runs = range(1,9)
+    sess_suffix = ['a1','a2','b1','b2']
 
     for subj in subIDs:
         # Note all Rest fMRI runs are in ${sub}_b2
         # Note rest runs are bold9 and bold10.nii.gz
         # Iterate through each run
-        sess = subj + '_b2'
-        for run in runs:
-            print ('Running regression on session', sess, '| run', run)
-            print ('\tModel:', model, 'with spikeReg:', spikeReg, '| zscore:', zscore)
-            # Run nuisance regression for this subject's run, using a helper function defined below
-            # Data will be output in 'outputdir', defined above
-            outputfilename = outputdir + sess + '_rsfMRI_' + model + '_' + run + '.h5'
-            try: 
-                _postProcRegression([sess], [run], outputfilename, task=None, taskModel=None, nuisModel=model)
-            except:
-                print('Looks like no files')
+        for sess_id in sess_suffix:
+            sess = subj + '_' + sess_id
+            for run in runs:
+                print ('Running task regression on session', sess, '| run', run)
+                print ('\tModel:', model, '| task model:', taskmodel, '| spikeReg:', spikeReg, '| zscore:', zscore)
+                # Run nuisance regression for this subject's run, using a helper function defined below
+                # Data will be output in 'outputdir', defined above
+                outputfilename = outputdir + sess + '_tfMRI_' + space + '_' + taskmodel + '_' + model + '_bold' + str(run)
+                #try: 
+                _postProcRegression([sess], [run], outputfilename, space=space, taskmodel=taskmodel, nuisModel=model)
+                #except:
+                #    print('Looks like no files')
 
-def rsNuisRegression(model='qunex',spikeReg=False,zscore=False):
+def rsNuisRegression(model='qunex',space='parcellated',spikeReg=False,zscore=False):
     """
     Function to perform nuisance regression on each rest run separately
     
@@ -171,7 +172,8 @@ def rsNuisRegression(model='qunex',spikeReg=False,zscore=False):
     """
     outputdir = '../../derivatives/postprocessing/'
     # Iterate through each subject
-    runs = ['bold9','bold10']
+    #runs = ['bold9','bold10']
+    runs = range(9,11)
 
     for subj in subIDs:
         # Note all Rest fMRI runs are in ${sub}_b2
@@ -183,9 +185,9 @@ def rsNuisRegression(model='qunex',spikeReg=False,zscore=False):
             print ('\tModel:', model, 'with spikeReg:', spikeReg, '| zscore:', zscore)
             # Run nuisance regression for this subject's run, using a helper function defined below
             # Data will be output in 'outputdir', defined above
-            outputfilename = outputdir + sess + '_rsfMRI_' + model + '_' + run + '.h5'
+            outputfilename = outputdir + sess + '_rsfMRI_' + space + '_' + model + '_bold' + str(run)
             try: 
-                _postProcRegression([sess], [run], outputfilename, task=None, taskModel=None, nuisModel=model)
+                _postProcRegression([sess], [run], outputfilename, space=space, taskmodel=None, nuisModel=model)
             except:
                 print('Looks like no files')
 
@@ -193,24 +195,32 @@ def rsNuisRegression(model='qunex',spikeReg=False,zscore=False):
 #########################################
 # Helper functions
 
-def _postProcRegression(sessions,runs,outputfilename,task=None, taskModel=None, nuisModel='qunex'):
+def _postProcRegression(sessions,runs,outputfilename,space='parcellated',taskmodel=None, nuisModel='qunex'):
     """
     This function runs a post processing regression on a single subject
     Will only regress out task-timing, using either a canonical HRF model or FIR model
     Input parameters:
         sessions    :   a list/array of strings specifying session IDs
         runs        :   a list/array of strings specifying run IDs
-        task        :   task or session name (?) 
-        taskModel   :   regression model (default: None (nuisance only) ['canonicalTask',firTask'])
+        taskmodel        :  task model (Default: None (rs nuisance regression); [None, 'canonical','FIR'] 
     """
 
     data = []
     nuisanceRegressors = []
     constant = []
     lineartrend = []
+    if taskmodel is not None: 
+        task_regs = []
+        regression_index = []
     for sess in sessions:
         for run in runs:
-            rundata = loadRawParcellatedData(sess,run)
+            run_id = 'bold' + str(run)
+
+            if space=='parcellated':
+                rundata = loadRawParcellatedData(sess,run_id)
+            elif space=='vertex':
+               rundata = loadRawVertexData(sess,run_id)
+
             num_timepoints = rundata.shape[0]
 
             tMask = np.ones((num_timepoints,))
@@ -226,26 +236,34 @@ def _postProcRegression(sessions,runs,outputfilename,task=None, taskModel=None, 
 #            rundata = signal.detrend(rundata,axis=0,type='linear')
             
             # Load in nuisance regressors
-            nuisregs = loadNuisanceRegressors(sess,run,num_timepoints)
+            nuisregs = loadNuisanceRegressors(sess,run_id,num_timepoints)
             # Skip nuis regs frames
             nuisregs = nuisregs[tMask,:]
 
             nuisanceRegressors.extend(nuisregs)
             data.extend(rundata)
 
+            if taskmodel is not None:
+                #  Load in task timing file
+                tasktiming = loadTaskTiming(sess, run, num_timepoints, taskModel=taskmodel)
+                task_regs.extend(tasktiming['taskRegressors'][tMask,:])
+                regression_index.extend(tasktiming['stimIndex'])
+
+
     data = np.asarray(data)
     nuisanceRegressors = np.asarray(nuisanceRegressors)
     nROIs = data.shape[1]
 
     # Load regressors for data
-    if task==None:
+    if taskmodel==None:
         print('Running standard nuisance regression')
         #X = loadTaskTiming(subj, task, taskModel=taskModel, nRegsFIR=25)
 
         allRegressors = nuisanceRegressors
     else: 
-        ## TODO
-        taskRegs = X['taskRegressors'] # These include the two binary regressors
+        task_regs = np.asarray(task_regs)
+        regression_index = np.asarray(regression_index)
+        allRegressors = np.hstack((task_regs,nuisanceRegressors))
 
 
     #betas, resid = regression.regression(data, allRegressors, constant=True)
@@ -259,10 +277,14 @@ def _postProcRegression(sessions,runs,outputfilename,task=None, taskModel=None, 
     betas = betas.T # Exclude nuisance regressors
     residual_ts = resid.T
 
+    # For task data, only include task-related regressors
+    if taskmodel is not None:
+        betas = betas[:,:len(regression_index)]
 
-    h5f = h5py.File(outputfilename,'a')
+    h5f = h5py.File(outputfilename + '.h5','a')
     outname1 = 'residuals'
     outname2 = 'betas'
+    if taskmodel is not None: np.savetxt(outputfilename + '_taskIndex.csv', regression_index,delimiter=',',fmt ='% s')
     try:
         h5f.create_dataset(outname1,data=residual_ts)
         h5f.create_dataset(outname2,data=betas)
@@ -272,7 +294,7 @@ def _postProcRegression(sessions,runs,outputfilename,task=None, taskModel=None, 
         h5f.create_dataset(outname2,data=betas)
     h5f.close()
 
-def loadTaskTiming(sess, run, num_timepoints, taskModel='canonical', nRegsFIR=25):
+def loadTaskTiming(sess, run, num_timepoints, taskModel='canonical', nRegsFIR=20):
     """
     Loads task timings for each run separately
     """
@@ -606,5 +628,13 @@ def loadRawParcellatedData(sess,run,datadir='/gpfs/loomis/project/n3/Studies/Mur
     Load in parcellated data for given session and run
     """
     datafile = datadir + sess + '/images/functional/' + run + '_Atlas.LR.Parcels.32k_fs_LR.ptseries.nii'
+    data = nib.load(datafile).get_data()
+    return data
+
+def loadRawVertexData(sess,run,datadir='/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/sessions/'):
+    """
+    Load in surface vertex data for given session and run
+    """
+    datafile = datadir + sess + '/images/functional/' + run + '_Atlas.dtseries.nii'
     data = nib.load(datafile).get_data()
     return data
