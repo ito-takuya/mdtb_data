@@ -306,6 +306,7 @@ def loadTaskTiming(sess, run, num_timepoints, taskModel='canonical', nRegsFIR=20
     conditions = np.unique(stimdf.trial_type.values)
     conditions = list(conditions)
     conditions.remove('Instruct') # Remove this - not a condition (and no timing information)
+    # Note that the event files don't have a distinction between 0-back nd 2-back conditions for both object recognition and verbal recognition tasks
     # conditions.remove('Rest')
     tasks = np.unique(stimdf.taskName.values)
 
