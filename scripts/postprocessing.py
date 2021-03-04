@@ -56,7 +56,6 @@ nuis_reg_dir = datadir + 'nuisanceRegressors/'
 # Create directory if it doesn't exist
 if not os.path.exists(nuis_reg_dir): os.makedirs(nuis_reg_dir)
 # Define the *output* directory for preprocessed data
-outputdir = datadir + 'hcpPostProcCiric/' 
 #
 
 # All subjects
@@ -107,7 +106,7 @@ def taskGLM(taskmodel='canonical',model='qunex',space='parcellated',spikeReg=Fal
                         Note, inclusion of this will add additional set of regressors, which is custom for each subject/run
         zscore   : Normalize data (across time) prior to fitting regression
     """
-    outputdir = '../../derivatives/postprocessing/'
+    outputdir = datadir + '../derivatives/postprocessing/'
     # Iterate through each subject
     runs = range(1,9)
     sess_suffix = ['a1','a2','b1','b2']
@@ -170,7 +169,7 @@ def rsNuisRegression(model='qunex',space='parcellated',spikeReg=False,zscore=Fal
                         Note, inclusion of this will add additional set of regressors, which is custom for each subject/run
         zscore   : Normalize data (across time) prior to fitting regression
     """
-    outputdir = '../../derivatives/postprocessing/'
+    outputdir = datadir + '../derivatives/postprocessing/'
     # Iterate through each subject
     #runs = ['bold9','bold10']
     runs = range(9,11)
@@ -279,7 +278,7 @@ def _postProcRegression(sessions,runs,outputfilename,space='parcellated',taskmod
 
     # For task data, only include task-related regressors
     if taskmodel is not None:
-        betas = betas[:,:len(regression_index)]
+        betas = betas[:len(regression_index),:].T
 
     h5f = h5py.File(outputfilename + '.h5','a')
     outname1 = 'residuals'
