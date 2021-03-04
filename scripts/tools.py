@@ -73,7 +73,7 @@ def loadTaskActivations(sess, run, space='vertex'):
             
     return data, task_index
 
-def computeSubjRSM(sub,space='vertex',wholebrain=False):
+def computeSubjRSM(sub,space='vertex',wholebrain=False,unique_tasks=None):
     """
     Computes a cross-validated RSM - cross-validated on A sessions versus B sessions (diagonals are therefore not ~ 1)
     Returns: a cross-validated, subject-specific RSM with corresponding index (ordering)
@@ -108,7 +108,8 @@ def computeSubjRSM(sub,space='vertex',wholebrain=False):
     data_2 = np.asarray(data_2)
     task_index_2 = np.asarray(task_index_2)
     
-    unique_tasks = np.unique(task_index_1)
+    if unique_tasks is None:
+        unique_tasks = np.unique(task_index_1)
     # Ensure a and b have the same number of unique tasks
     if len(np.unique(task_index_1)) != len(np.unique(task_index_2)):
         raise Exception("Wait! Sessions 1 and 2 don't have the same number of tasks... Cannot generate cross-validated RSMs")
