@@ -142,6 +142,7 @@ def computeSubjRSM(sub,space='vertex'):
                 for j in range(n_tasks):
                     if i>j: continue
                     tmpmat[i,j] = stats.pearsonr(roidat1[i,:],roidat2[j,:])[0]
+                    #tmpmat[i,j] = np.mean(np.multiply(roidat1[i,:],roidat2[j,:]))
 
             # Now make symmetric
             tmpmat = tmpmat + tmpmat.T
@@ -151,7 +152,7 @@ def computeSubjRSM(sub,space='vertex'):
         rsms = np.asarray(rsms)
 
     if space=='parcellated':
-        # Compute RSM for each network
+        # compute rsm for each network
         rsms = {}
         for net in orderednetworks:
             net_ind = np.where(networkdef==networkmappings[net])[0]
@@ -162,6 +163,7 @@ def computeSubjRSM(sub,space='vertex'):
                 for j in range(n_tasks):
                     if i>j: continue
                     tmpmat[i,j] = stats.pearsonr(netdat1[i,:],netdat2[j,:])[0]
+                    #tmpmat[i,j] = np.mean(np.multiply(netdat1[i,:],netdat2[j,:]))
 
             # Now make symmetric
             tmpmat = tmpmat + tmpmat.T
