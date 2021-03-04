@@ -73,7 +73,7 @@ def loadTaskActivations(sess, run, space='vertex'):
             
     return data, task_index
 
-def computeSubjRSM(sub,space='vertex'):
+def computeSubjRSM(sub,space='vertex',wholebrain=False):
     """
     Computes a cross-validated RSM - cross-validated on A sessions versus B sessions (diagonals are therefore not ~ 1)
     Returns: a cross-validated, subject-specific RSM with corresponding index (ordering)
@@ -131,45 +131,74 @@ def computeSubjRSM(sub,space='vertex'):
     data_task_2 = np.asarray(data_task_2).T
 
     if space=='vertex':
-        # compute RSM for each parcel
-        rsms = []
-        for roi in range(1,361):
-            roi_ind = np.where(glasser==roi)[0]
-            roidat1 = data_task_1[roi_ind,:].T
-            roidat2 = data_task_2[roi_ind,:].T
+        # Compute whole-brain RSM
+        if wholebrain:
             tmpmat = np.zeros((n_tasks,n_tasks))
             for i in range(n_tasks):
                 for j in range(n_tasks):
                     if i>j: continue
-                    tmpmat[i,j] = stats.pearsonr(roidat1[i,:],roidat2[j,:])[0]
-                    #tmpmat[i,j] = np.mean(np.multiply(roidat1[i,:],roidat2[j,:]))
+                    tmpmat[i,j] = stats.pearsonr(data_task_1[:,i],data_task_2[:,j])[0]
 
             # Now make symmetric
             tmpmat = tmpmat + tmpmat.T
             # double counting diagonal so divide by 2
             np.fill_diagonal(tmpmat, tmpmat.diagonal()/2.0)
-            rsms.append(tmpmat)
-        rsms = np.asarray(rsms)
+            rsms = tmpmat
+        else:
+
+            # compute RSM for each parcel
+            rsms = []
+            for roi in range(1,361):
+                roi_ind = np.where(glasser==roi)[0]
+                roidat1 = data_task_1[roi_ind,:].T
+                roidat2 = data_task_2[roi_ind,:].T
+                tmpmat = np.zeros((n_tasks,n_tasks))
+                for i in range(n_tasks):
+                    for j in range(n_tasks):
+                        if i>j: continue
+                        tmpmat[i,j] = stats.pearsonr(roidat1[i,:],roidat2[j,:])[0]
+                        #tmpmat[i,j] = np.mean(np.multiply(roidat1[i,:],roidat2[j,:]))
+
+                # Now make symmetric
+                tmpmat = tmpmat + tmpmat.T
+                # double counting diagonal so divide by 2
+                np.fill_diagonal(tmpmat, tmpmat.diagonal()/2.0)
+                rsms.append(tmpmat)
+            rsms = np.asarray(rsms)
 
     if space=='parcellated':
-        # compute rsm for each network
-        rsms = {}
-        for net in orderednetworks:
-            net_ind = np.where(networkdef==networkmappings[net])[0]
-            netdat1 = data_task_1[net_ind,:].T
-            netdat2 = data_task_2[net_ind,:].T
+        # Compute whole-brain RSM
+        if wholebrain:
             tmpmat = np.zeros((n_tasks,n_tasks))
             for i in range(n_tasks):
                 for j in range(n_tasks):
                     if i>j: continue
-                    tmpmat[i,j] = stats.pearsonr(netdat1[i,:],netdat2[j,:])[0]
-                    #tmpmat[i,j] = np.mean(np.multiply(netdat1[i,:],netdat2[j,:]))
+                    tmpmat[i,j] = stats.pearsonr(data_task_1[:,i],data_task_2[:,j])[0]
 
             # Now make symmetric
             tmpmat = tmpmat + tmpmat.T
             # double counting diagonal so divide by 2
             np.fill_diagonal(tmpmat, tmpmat.diagonal()/2.0)
-            rsms[net] = tmpmat
+            rsms = tmpmat
+        else:
+            # compute rsm for each network
+            rsms = {}
+            for net in orderednetworks:
+                net_ind = np.where(networkdef==networkmappings[net])[0]
+                netdat1 = data_task_1[net_ind,:].T
+                netdat2 = data_task_2[net_ind,:].T
+                tmpmat = np.zeros((n_tasks,n_tasks))
+                for i in range(n_tasks):
+                    for j in range(n_tasks):
+                        if i>j: continue
+                        tmpmat[i,j] = stats.pearsonr(netdat1[i,:],netdat2[j,:])[0]
+                        #tmpmat[i,j] = np.mean(np.multiply(netdat1[i,:],netdat2[j,:]))
+
+                # Now make symmetric
+                tmpmat = tmpmat + tmpmat.T
+                # double counting diagonal so divide by 2
+                np.fill_diagonal(tmpmat, tmpmat.diagonal()/2.0)
+                rsms[net] = tmpmat
 
     return rsms, unique_tasks
 
