@@ -47,7 +47,7 @@ glasser = np.squeeze(nib.load(glasserfilename).get_data())
 
 
 
-def loadTaskActivations(sess, run, space='vertex'):
+def loadTaskActivations(sess, run, space='vertex', model='canonical'):
     """
     Load task activation maps (canonical HRF)
 
@@ -57,7 +57,7 @@ def loadTaskActivations(sess, run, space='vertex'):
     """
 
     taskdatadir = basedir  + 'derivatives/postprocessing/'
-    filename = taskdatadir + sess + '_tfMRI_' + space + '_canonical_qunex_bold' + str(run)
+    filename = taskdatadir + sess + '_tfMRI_' + space + '_' + model + '_qunex_bold' + str(run)
     h5f = h5py.File(filename + '.h5','r')
     data = h5f['betas'][:].copy()
     #task_index = np.loadtxt(filename + '_taskIndex.csv')
@@ -73,7 +73,30 @@ def loadTaskActivations(sess, run, space='vertex'):
             
     return data, task_index
 
-def computeSubjRSM(sub,space='vertex',wholebrain=False,unique_tasks=None):
+def loadrsfMRI(subj,space='parcellated'):
+    """
+    Load in resting-state residuals
+    """
+    runs = ['bold9','bold10']
+
+    data = []
+    for run in runs:
+        try:
+            h5f = h5py.File(datadir + subj + '_b2_rsfMRI_parcellated_qunex_' + run + '.h5','r')
+            ts = h5f['residuals'][:].T
+            data.extend(ts)
+            h5f.close()
+        except:
+            print('Subject', subj, '| run', run, ' does not exist... skipping')
+
+    try:
+        data = np.asarray(data).T
+    except:
+        print('\tError')
+
+    return data
+
+def computeSubjRSM(sub,space='vertex',glm='canonical', wholebrain=False,unique_tasks=None):
     """
     Computes a cross-validated RSM - cross-validated on A sessions versus B sessions (diagonals are therefore not ~ 1)
     Returns: a cross-validated, subject-specific RSM with corresponding index (ordering)
@@ -90,7 +113,7 @@ def computeSubjRSM(sub,space='vertex',wholebrain=False,unique_tasks=None):
     for sess in sess1:
         sess_id = sub + '_' + sess
         for run in runs:
-            tmpdat, tmpind = loadTaskActivations(sess_id,run,space=space)
+            tmpdat, tmpind = loadTaskActivations(sess_id,run,space=space,model=glm)
             data_1.extend(tmpdat.T)
             task_index_1.extend(tmpind)
     data_1 = np.asarray(data_1)

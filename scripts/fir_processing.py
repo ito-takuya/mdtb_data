@@ -231,6 +231,11 @@ def _postProcRegression(sessions,runs,outputfilename,space='parcellated',taskmod
         task_regs = []
         regression_index = []
 
+    df_run_params = {}
+    df_run_params['Session'] = []
+    df_run_params['Run'] = []
+    df_run_params['SkippedFrames'] = []
+    df_run_params['NumTimepoints'] = []
     for sess in sessions:
         for run in runs:
             run_id = 'bold' + str(run)
@@ -241,6 +246,10 @@ def _postProcRegression(sessions,runs,outputfilename,space='parcellated',taskmod
                rundata = loadRawVertexData(sess,run_id)
 
             num_timepoints = rundata.shape[0]
+            df_run_params['Session'].append(sess)
+            df_run_params['Run'].append(run)
+            df_run_params['SkippedFrames'].append(framesToSkip)
+            df_run_params['NumTimepoints'].append(num_timepoints)
 
             tMask = np.ones((num_timepoints,))
             tMask[:framesToSkip] = 0
@@ -262,88 +271,126 @@ def _postProcRegression(sessions,runs,outputfilename,space='parcellated',taskmod
             nuisanceRegressors.extend(nuisregs)
             data.extend(rundata)
 
-            if taskmodel is not None:
-                #  Load in task timing file
-                tasktiming = loadTaskTiming(sess, run, num_timepoints, taskModel=taskmodel)
-                task_regs.extend(tasktiming['taskRegressors'][tMask,:])
-                regression_index.extend(tasktiming['stimIndex'])
+    df_run_params = pd.DataFrame(df_run_params)
+
+    if taskmodel is not None:
+        #  Load in task timing file
+        tasktiming = loadTaskTiming(sessions, runs, df_run_params, taskModel=taskmodel)
+        task_regs.extend(tasktiming['taskRegressors'][tMask,:])
+        regression_index.extend(tasktiming['stimIndex'])
 
 
     data = np.asarray(data)
     nuisanceRegressors = np.asarray(nuisanceRegressors)
     nROIs = data.shape[1]
 
-    # Load regressors for data
-    if taskmodel==None:
-        print('Running standard nuisance regression')
-        #X = loadTaskTiming(subj, task, taskModel=taskModel, nRegsFIR=25)
+    return data, tasktiming
 
-        allRegressors = nuisanceRegressors
-    else: 
-        task_regs = np.asarray(task_regs)
-        regression_index = np.asarray(regression_index)
-        allRegressors = np.hstack((task_regs,nuisanceRegressors))
+#    # Load regressors for data
+#    if taskmodel==None:
+#        print('Running standard nuisance regression')
+#        #X = loadTaskTiming(subj, task, taskModel=taskModel, nRegsFIR=25)
+#
+#        allRegressors = nuisanceRegressors
+#    else: 
+#        task_regs = np.asarray(task_regs)
+#        regression_index = np.asarray(regression_index)
+#        allRegressors = np.hstack((task_regs,nuisanceRegressors))
+#
+#
+#    #betas, resid = regression.regression(data, allRegressors, constant=True)
+#
+#    reg = LinearRegression().fit(allRegressors,data)
+#    betas = reg.coef_
+#    y_pred = reg.predict(allRegressors)
+#    resid = data - y_pred
+#    resid = data
+#    
+#    betas = betas.T # Exclude nuisance regressors
+#    residual_ts = resid.T
+#
+#    # For task data, only include task-related regressors
+#    if taskmodel is not None:
+#        betas = betas[:len(regression_index),:].T
+#
+#    h5f = h5py.File(outputfilename + '.h5','a')
+#    outname1 = 'residuals'
+#    outname2 = 'betas'
+#    if taskmodel is not None: np.savetxt(outputfilename + '_taskIndex.csv', regression_index,delimiter=',',fmt ='% s')
+#    try:
+#        h5f.create_dataset(outname1,data=residual_ts)
+#        h5f.create_dataset(outname2,data=betas)
+#    except:
+#        del h5f[outname1], h5f[outname2]
+#        h5f.create_dataset(outname1,data=residual_ts)
+#        h5f.create_dataset(outname2,data=betas)
+#    h5f.close()
 
-
-    #betas, resid = regression.regression(data, allRegressors, constant=True)
-
-    reg = LinearRegression().fit(allRegressors,data)
-    betas = reg.coef_
-    y_pred = reg.predict(allRegressors)
-    resid = data - y_pred
-    resid = data
-    
-    betas = betas.T # Exclude nuisance regressors
-    residual_ts = resid.T
-
-    # For task data, only include task-related regressors
-    if taskmodel is not None:
-        betas = betas[:len(regression_index),:].T
-
-    h5f = h5py.File(outputfilename + '.h5','a')
-    outname1 = 'residuals'
-    outname2 = 'betas'
-    if taskmodel is not None: np.savetxt(outputfilename + '_taskIndex.csv', regression_index,delimiter=',',fmt ='% s')
-    try:
-        h5f.create_dataset(outname1,data=residual_ts)
-        h5f.create_dataset(outname2,data=betas)
-    except:
-        del h5f[outname1], h5f[outname2]
-        h5f.create_dataset(outname1,data=residual_ts)
-        h5f.create_dataset(outname2,data=betas)
-    h5f.close()
-
-def loadTaskTiming(sess, run, num_timepoints, taskModel='canonical', nRegsFIR=20):
+def loadTaskTiming(sessions, runs, df_run_params, taskModel='canonical', nRegsFIR=20):
     """
     Loads task timings for each run separately
     """
     trLength = 1.0
-    subj = sess[:2] # first 2 characters form the subject ID
-    sess_id = sess[-2:] # last 2 characters form the session
-    tasktime_dir = datadir + 'sessions/' + sess + '/bids/func/'
-    stimfile = glob.glob(tasktime_dir + 'sub-' + subj + '_ses-' + sess_id + '*' + str(run) + '_events.tsv')[0]
-    stimdf = pd.read_csv(stimfile,sep='\t') 
-    conditions = np.unique(stimdf.trial_type.values)
-    conditions = list(conditions)
+    df_all = pd.DataFrame()
+    conditions = []
+    trcount = 0
+    for sess in sessions:
+        for run in runs:
+            subj = sess[:2] # first 2 characters form the subject ID
+            sess_id = sess[-2:] # last 2 characters form the session
+            tasktime_dir = datadir + 'sessions/' + sess + '/bids/func/'
+            stimfile = glob.glob(tasktime_dir + 'sub-' + subj + '_ses-' + sess_id + '*' + str(run) + '_events.tsv')[0]
+            stimdf = pd.read_csv(stimfile,sep='\t') 
+            # Add number of timepoints from last run and subtract the number of skipped frames
+            skipped_frames = df_run_params.SkippedFrames[(df_run_params.Session==sess) & (df_run_params.Run==run)].values
+            stimdf.startTRreal = stimdf.startTRreal.values + trcount - skipped_frames
+            trcount += df_run_params.NumTimepoints[(df_run_params.Session==sess) & (df_run_params.Run==run)].values - skipped_frames
+            if stimdf.startTRreal.min()<0:
+                raise Exception("Start TR CANNOT be less than 0")
+            df_all = df_all.append(stimdf)
+            conditions.extend(list(np.unique(stimdf.trial_type.values)))
+
+    df_all = df_all.reset_index(drop=True) # reset indices
+    trcount = int(trcount)
+    conditions = list(np.unique(conditions))
     conditions.remove('Instruct') # Remove this - not a condition (and no timing information)
     # Note that the event files don't have a distinction between 0-back nd 2-back conditions for both object recognition and verbal recognition tasks
     # conditions.remove('Rest')
-    tasks = np.unique(stimdf.taskName.values)
+    tasks = np.unique(df_all.taskName.values)
 
-    stim_mat = np.zeros((num_timepoints,len(conditions)))
+    stim_mat = np.zeros((trcount,len(conditions)))
     stim_index = []
 
     stimcount = 0
     for cond in conditions:
-        conddf = stimdf.loc[stimdf.trial_type==cond]
+        print('Condition', cond)
+        conddf = df_all.loc[df_all.trial_type==cond]
         for ind in conddf.index:
-            trstart = int(conddf.startTRreal[ind])
-            duration = conddf.duration[ind]
+            trstart = int(df_all.startTRreal[ind])
+            duration = df_all.duration[ind]
+            print('\tduration:', duration)
             trend = int(np.ceil(trstart + duration))
             stim_mat[trstart:trend,stimcount] = 1.0
 
         stim_index.append(cond)
         stimcount += 1 # go to next condition
+
+    if taskModel=='betaseries':
+
+        beta_mat = []
+        stimcount = 0
+        for cond in conditions:
+            print('Condition', cond)
+            conddf = df_all.loc[df_all.trial_type==cond]
+            for ind in conddf.index:
+                trstart = int(df_all.startTRreal[ind])
+                duration = df_all.duration[ind]
+                print('\tduration:', duration)
+                trend = int(np.ceil(trstart + duration))
+                stim_mat[trstart:trend,stimcount] = 1.0
+
+            stim_index.append(cond)
+            stimcount += 1 # go to next condition
 
 
     ## 
@@ -675,29 +722,30 @@ def convertDesignMat2FIR(design_mat,hrf_lag=20):
         tmp_deriv = np.diff(tmp)
         onsets = np.where(tmp_deriv==1)[0] + 1 # add 1 to onset since derivative is calculated at the first time point
         offsets = np.where(tmp_deriv==-1)[0]
-        print(onsets,offsets)
+        #print(onsets,offsets)
+        print(np.asarray(onsets)-np.asarray(offsets))
         n_blocks = len(onsets)
         block_duration = offsets[0] - onsets[0]
         # Create FIR design matrix for this condition/feature
-        fir_arr = np.zeros((len(tmp),block_duration+hrf_lag)) # Number of time points for each FIR block
-        for block in range(n_blocks):
-            reg = 0
-            for tp in range(onsets[block],offsets[block]):
-                fir_arr[tp,reg] = 1
-                reg += 1
-            tp += 1 # next time point
-
-            # Now include lag after offset (to account for slow HRF lag)
-            for lag in range(hrf_lag):
-                if tp>=max_tps: continue
-                fir_arr[tp,reg] = 1
-                reg += 1
-                tp += 1
-
-        firdesign.extend(fir_arr.T)
-
-    firdesign = np.asarray(firdesign)
-    return firdesign
+#        fir_arr = np.zeros((len(tmp),block_duration+hrf_lag)) # Number of time points for each FIR block
+#        for block in range(n_blocks):
+#            reg = 0
+#            for tp in range(onsets[block],offsets[block]):
+#                fir_arr[tp,reg] = 1
+#                reg += 1
+#            tp += 1 # next time point
+#
+#            # Now include lag after offset (to account for slow HRF lag)
+#            for lag in range(hrf_lag):
+#                if tp>=max_tps: continue
+#                fir_arr[tp,reg] = 1
+#                reg += 1
+#                tp += 1
+#
+#        firdesign.extend(fir_arr.T)
+#
+#    firdesign = np.asarray(firdesign)
+#    return firdesign
 
         
 
