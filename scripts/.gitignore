@@ -1,0 +1,9 @@
+*.png
+*.ai
+.ipynb_checkpoints/
+.qunexstudy
+__pycache__
+*.jpg
+*.jpeg
+*.png
+*.gif
