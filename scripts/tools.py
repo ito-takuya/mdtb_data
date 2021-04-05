@@ -7,6 +7,8 @@ import numpy as np
 import nibabel as nib
 import scipy.stats as stats
 import h5py
+import sklearn
+import sklearn.svm as svm
 
 basedir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/'
 
@@ -227,7 +229,54 @@ def computeSubjRSM(sub,space='vertex',glm='canonical', wholebrain=False,unique_t
     return rsms, unique_tasks
 
     
+def decoding(trainset,testset,trainlabels,testlabels,classifier='distance',confusion=False):
+    unique_labels = np.unique(trainlabels)
+    
+    if classifier == 'distance':
+        #### Create prototypes from trainset
+        prototypes = {}
+        for label in unique_labels:
+            ind = np.where(trainlabels==label)[0]
+            prototypes[label] = np.mean(trainset[ind,:],axis=0)
 
+        #### Now classifiy each sample n the testset
+        predictions = []
+        for i in range(testset.shape[0]):
+            # Correlate sampple with each prototype
+            rs = []
+            for label in prototypes:
+                rs.append(stats.pearsonr(prototypes[label],testset[i,:])[0])
+            
+            # Find the closest prototype for sample
+            max_ind = np.argmax(np.asarray(rs))
+            predictions.append(unique_labels[max_ind])
+
+        predictions = np.asarray(predictions)
+
+    if classifier == 'logistic':
+
+        clf = sklearn.linear_model.LogisticRegression(solver='lbfgs',penalty='none',max_iter=1000)
+        clf.fit(trainset,trainlabels)
+        predictions = clf.predict(testset)
+
+    if classifier == 'ridge':
+
+        clf = sklearn.linear_model.RidgeClassifier(solver='svd',max_iter=1000)
+        clf.fit(trainset,trainlabels)
+        predictions = clf.predict(testset)
+
+    if classifier == 'svm':
+        clf = svm.SVC(kernel='linear')
+        clf.fit(trainset,trainlabels)
+        predictions = clf.predict(testset)
+
+    accuracy = predictions == np.asarray(testlabels)
+    confusion_mat = sklearn.metrics.confusion_matrix(testlabels, predictions, labels=unique_labels)
+
+    if confusion:
+        return accuracy, confusion_mat
+    else:
+        return accuracy
 
 def getDimensionality(data):
     """
