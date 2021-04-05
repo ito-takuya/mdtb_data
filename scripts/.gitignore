@@ -7,3 +7,5 @@ __pycache__
 *.jpeg
 *.png
 *.gif
+*.out
+*.err
