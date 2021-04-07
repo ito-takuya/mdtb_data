@@ -10,7 +10,7 @@ import h5py
 import sklearn
 import sklearn.svm as svm
 
-basedir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/'
+basedir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/'
 
 networkdef = np.loadtxt('/home/ti236/AnalysisTools/ColeAnticevicNetPartition/cortex_parcel_network_assignments.txt')
 # need to subtract one to make it compatible for python indices
@@ -255,7 +255,8 @@ def decoding(trainset,testset,trainlabels,testlabels,classifier='distance',confu
 
     if classifier == 'logistic':
 
-        clf = sklearn.linear_model.LogisticRegression(solver='lbfgs',penalty='none',max_iter=1000)
+        #clf = sklearn.linear_model.LogisticRegression(solver='lbfgs',penalty='none',max_iter=1000)
+        clf = sklearn.linear_model.LogisticRegression(solver='liblinear')
         clf.fit(trainset,trainlabels)
         predictions = clf.predict(testset)
 
@@ -266,15 +267,29 @@ def decoding(trainset,testset,trainlabels,testlabels,classifier='distance',confu
         predictions = clf.predict(testset)
 
     if classifier == 'svm':
-        clf = svm.SVC(kernel='linear')
+        clf = svm.SVC(kernel='linear',probability=True)
         clf.fit(trainset,trainlabels)
         predictions = clf.predict(testset)
 
     accuracy = predictions == np.asarray(testlabels)
-    confusion_mat = sklearn.metrics.confusion_matrix(testlabels, predictions, labels=unique_labels)
+    #confusion_mat = sklearn.metrics.confusion_matrix(testlabels, predictions, labels=unique_labels)
 
-    if confusion:
-        return accuracy, confusion_mat
+    if classifier in ['svm','logistic']:
+        decision_function = clf.predict_log_proba(testset)
+        conditions = clf.classes_ 
+        decision_on_test = []
+        for i in range(len(testlabels)):
+            ind = np.where(conditions==testlabels[i])[0]
+            decision_on_test.append(decision_function[i,ind])
+        return accuracy, decision_on_test 
+    elif classifier in ['ridge']:
+        decision_function = clf.decision_function(testset)
+        conditions = clf.classes_ 
+        decision_on_test = []
+        for i in range(len(testlabels)):
+            ind = np.where(conditions==testlabels[i])[0]
+            decision_on_test.append(decision_function[i,ind])
+        return accuracy, decision_on_test 
     else:
         return accuracy
 

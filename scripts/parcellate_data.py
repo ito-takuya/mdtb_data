@@ -20,7 +20,7 @@ sessions=['02_a1','02_a2','02_b1','02_b2','03_a1','03_a2','03_b1','03_b2','04_a1
 
 runnames=['bold1','bold2','bold3','bold4','bold5','bold6','bold7','bold8','bold9','bold10']
 
-datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/'
+datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/'
 
 for sess in sessions:
     for run in runnames:

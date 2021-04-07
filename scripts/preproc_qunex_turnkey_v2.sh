@@ -9,10 +9,10 @@ export FSLDIR PATH
 . ${FSLDIR}/etc/fslconf/fsl.sh
 
 ## STUDY PARAMETERS
-my_study=qunexMultiTaskVAE
-training_folder=/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/multiTaskVAE
+my_study=qunex_mdtb
+training_folder=/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data
 my_study_folder=$training_folder/$my_study
-bids_data_folder=/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/multiTaskVAE/bids
+bids_data_folder=/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/bids
 
 qunex_container=/gpfs/project/fas/n3/software/Singularity/qunex_suite_0.61.17.sif
 #qunex_container=/gpfs/project/fas/n3/software/Singularity/qunex_suite-latest.sif
