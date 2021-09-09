@@ -25,7 +25,7 @@ import postproc_tools as pptools
 
 ## Define GLOBAL variables (variables accessible to all functions
 # Define base data directory
-datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/'
+datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/'
 # Define number of frames to skip
 framesToSkip = 5
 # Define the *output* directory for nuisance regressors
@@ -47,6 +47,7 @@ parser = argparse.ArgumentParser('./main.py', description='Run postprocessing')
 parser.add_argument('--space', type=str, default="parcellated", help="'parcellated' or 'vertex'")
 parser.add_argument('--taskmodel', type=str, default=None, help="currently only canonical supported. in the future, may include 'beta series' and 'fir'")
 parser.add_argument('--model', type=str, default="qunex", help="For now, qunex is the only implemented option")
+parser.add_argument('--atlas', type=str, default="glasser", help="Glasser is the default atlas (otherwise- schaefer")
 parser.add_argument('--zscore', action='store_true', help='zscore data before regression')
 parser.add_argument('--spikereg', action='store_true', help='implement spike regression')
 parser.add_argument('--output_suffix', type=str, default="", help="output suffix")
@@ -61,6 +62,7 @@ def run(args):
     space = args.space
     taskmodel = args.taskmodel
     model = args.model
+    atlas = args.atlas
     zscore = args.zscore
     spikereg = args.spikereg
     output_suffix = args.output_suffix
@@ -91,12 +93,16 @@ def run(args):
                 print ('\tModel:', model, 'with spikereg:', spikereg, '| zscore:', zscore)
             # Run nuisance regression for this subject's run, using a helper function defined below
             # Data will be output in 'outputdir', defined above
-            outputfilename = outputdir + sess + '_rsfMRI_' + space + '_' + model + '_bold' + str(run) + '_' + output_suffix
+            # Only include atlas name if schaefer
+            if atlas=='glasser':
+                outputfilename = outputdir + sess + '_rsfMRI_' + space + '_' + model + 'bold' + str(run) + output_suffix
+            elif atlas=='schaefer':
+                outputfilename = outputdir + sess + '_rsfMRI_' + atlas + '_'  + space + '_' + model + 'bold' + str(run) + output_suffix
 
             run_id = 'bold' + str(run)
             try: 
                 if space=='parcellated':
-                    rundata = pptools.loadRawParcellatedData(sess,run_id)
+                    rundata = pptools.loadRawParcellatedData(sess,run_id,atlas=atlas)
                 elif space=='vertex':
                    rundata = pptools.loadRawVertexData(sess,run_id)
             except:
