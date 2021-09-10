@@ -47,7 +47,7 @@ parser = argparse.ArgumentParser('./main.py', description='Run postprocessing')
 parser.add_argument('--space', type=str, default="parcellated", help="'parcellated' or 'vertex'")
 parser.add_argument('--taskmodel', type=str, default=None, help="currently only canonical supported. in the future, may include 'beta series' and 'fir'")
 parser.add_argument('--model', type=str, default="qunex", help="For now, qunex is the only implemented option")
-parser.add_argument('--atlas', type=str, default="glasser", help="Glasser is the default atlas (otherwise- schaefer")
+parser.add_argument('--atlas', type=str, default="glasser", help="Glasser is the default atlas (otherwise- schaefer/gordon")
 parser.add_argument('--zscore', action='store_true', help='zscore data before regression')
 parser.add_argument('--spikereg', action='store_true', help='implement spike regression')
 parser.add_argument('--output_suffix', type=str, default="", help="output suffix")
@@ -93,11 +93,13 @@ def run(args):
                 print ('\tModel:', model, 'with spikereg:', spikereg, '| zscore:', zscore)
             # Run nuisance regression for this subject's run, using a helper function defined below
             # Data will be output in 'outputdir', defined above
-            # Only include atlas name if schaefer
+            # Only include atlas name if schaefer/gordon
             if atlas=='glasser':
-                outputfilename = outputdir + sess + '_rsfMRI_' + space + '_' + model + 'bold' + str(run) + output_suffix
+                outputfilename = outputdir + sess + '_rsfMRI_' + space + '_' + model + '_bold' + str(run) + output_suffix
             elif atlas=='schaefer':
-                outputfilename = outputdir + sess + '_rsfMRI_' + atlas + '_'  + space + '_' + model + 'bold' + str(run) + output_suffix
+                outputfilename = outputdir + sess + '_rsfMRI_' + atlas + '_'  + space + '_' + model + '_bold' + str(run) + output_suffix
+            elif atlas=='gordon':
+                outputfilename = outputdir + sess + '_rsfMRI_' + atlas + '_'  + space + '_' + model + '_bold' + str(run) + output_suffix
 
             run_id = 'bold' + str(run)
             try: 

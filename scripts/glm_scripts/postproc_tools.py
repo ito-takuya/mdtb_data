@@ -552,6 +552,8 @@ def loadRawParcellatedData(sess,run,datadir='/gpfs/loomis/project/n3/Studies/Mur
         datafile = datadir + sess + '/images/functional/' + run + '_Atlas.LR.Parcels.32k_fs_LR.ptseries.nii'
     elif atlas=='schaefer':
         datafile = datadir + sess + '/images/functional/' + run + '_SchaeferAtlas.LR.Parcels.32k_fs_LR.ptseries.nii'
+    elif atlas=='gordon':
+        datafile = datadir + sess + '/images/functional/' + run + '_GordonAtlas.LR.Parcels.32k_fs_LR.ptseries.nii'
     data = nib.load(datafile).get_data()
     return data
 
