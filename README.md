@@ -11,9 +11,12 @@ ___
 #### Note that files will be read-only access, so it's recommended to copy template code to one's own directory on Grace and read-in data from your local project repo
 
 Base directory: `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/`
+
 Raw BIDS formatted data: `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/bids/`
+
 QuNex preprocessed data: `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/sessions`
-Fully preprocessed data: Includes QuNex preprocessed + post-processed nuisance regression (including removal of white matter, ventricle and motion time series). This includes processed data for both task and rest data at parcellated and vertex-wise time series.
-`/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/derivatives/postprocessing/`
+
+Fully preprocessed data: Includes QuNex preprocessed + post-processed nuisance regression (including removal of white matter, ventricle and motion time series). This includes processed data for both task and rest data at parcellated and vertex-wise time series: `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/derivatives/postprocessing/`
+
 Local code repo (which is synced to this GitHub repo): `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/docs/`
 
