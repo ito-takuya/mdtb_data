@@ -5,7 +5,6 @@
 #### E-mail for questions: taku [dot] ito1 [at] gmail [dot] com
 #### Last updated: 9/27/21
 
-___
 
 # Basic data directory structure:
 #### Note that files will be read-only access, so it's recommended to copy template code to one's own directory on Grace and read-in data from your local project repo
