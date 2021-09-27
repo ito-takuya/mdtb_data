@@ -19,3 +19,7 @@ Fully preprocessed data: Includes QuNex preprocessed + post-processed nuisance r
 
 Local code repo (which is synced to this GitHub repo): `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/docs/`
 
+# Useful python dependencies (python version 3.8)
+#### Helpful to start with anaconda python environment
+
+Code requires nibabel, nipy, h5py
