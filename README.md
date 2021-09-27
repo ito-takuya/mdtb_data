@@ -10,8 +10,7 @@ ___
 # Basic data directory structure:
 #### Note that files will be read-only access, so it's recommended to copy template code to one's own directory on Grace and read-in data from your local project repo
 
-#### Base directory
-`/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/`
+#### Base directory: `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/`
 #### Raw BIDS formatted data
 `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/bids/`
 #### QuNex preprocessed data
