@@ -1,9 +1,9 @@
 # Multi-domain task battery data set (King et al. 2019, Nat. Neurosci)
 
-## This code repository contains preprocessing and basic code to load and access preprocessed code from the MDTB data set 
-## For usage on Yale's CRC Grace cluster (http://cluster.ycrc.yale.edu/grace/)
-## E-mail for questions: taku [dot] ito1 [at] gmail [dot] com
-## Last updated: 9/27/21
+#### This code repository contains preprocessing and basic code to load and access preprocessed code from the MDTB data set 
+#### For usage on Yale's CRC Grace cluster (http://cluster.ycrc.yale.edu/grace/)
+#### E-mail for questions: taku [dot] ito1 [at] gmail [dot] com
+#### Last updated: 9/27/21
 
 ___
 
