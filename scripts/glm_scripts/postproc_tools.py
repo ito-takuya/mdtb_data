@@ -216,131 +216,74 @@ def loadTaskTimingBetaSeries(sess, run, num_timepoints):
 
     return output
 
-def loadTaskTimingFIR(sess, run, num_timepoints, nRegsFIR=20):
+def loadTaskTimingFIR(sess, num_timepoints, nRegsFIR=20):
     """
-    Loads task timings for each run separately
+    Loads task timings for all runs for a given subject session 
+
+    Parameters:
+
+    subj 
+        subject ID (as a string, e.g., '02')
+    num_timepoints
+        an array containing number of time points in each run
     """
+
+    blocklength = 30 # length of a task block
     trLength = 1.0
+    stimdf = pd.DataFrame()
     subj = sess[:2] # first 2 characters form the subject ID
     sess_id = sess[-2:] # last 2 characters form the session
-    tasktime_dir = datadir + 'sessions/' + sess + '/bids/func/'
-    stimfile = glob.glob(tasktime_dir + 'sub-' + subj + '_ses-' + sess_id + '*' + str(run) + '_events.tsv')[0]
-    stimdf = pd.read_csv(stimfile,sep='\t') 
-    conditions = np.unique(stimdf.trial_type.values)
-    conditions = list(conditions)
-    conditions.remove('Instruct') # Remove this - not a condition (and no timing information)
-    # Note that the event files don't have a distinction between 0-back nd 2-back conditions for both object recognition and verbal recognition tasks
-    # conditions.remove('Rest')
-    tasks = np.unique(stimdf.taskName.values)
+    for run in range(1,9):
+        tasktime_dir = datadir + 'sessions/' + sess + '/bids/func/'
+        stimfile = glob.glob(tasktime_dir + 'sub-' + subj + '_ses-' + sess_id + '*' + str(run) + '_events.tsv')[0]
+        stimdf = stimdf.append(pd.read_csv(stimfile,sep='\t'))
 
-    stim_mat = np.zeros((num_timepoints,len(conditions)))
-    stim_index = []
+    #### Now find all task block onsets by identifying 
+    df_taskonsets = {}
+    df_taskonsets['task'] = []
+    df_taskonsets['onset'] = []
+    df_taskonsets['run'] = []
+    # Identify all instruction screens (i.e., the beginning of task blocks)
+    stimdf = stimdf.reset_index() # Get new index
+    instruction_ind = stimdf.loc[stimdf.taskName=='instruct'].index
+    # Now add 1 to instruction index, since that's when the task starts
+    task_ind = instruction_ind + 1
+    for ind in task_ind:
+        df_taskonsets['task'].append(stimdf.index[ind].taskName)
+        df_taskonsets['onset'].append(stimdf.index[ind].startTRreal)
+        df_taskonsets['run'].append(stimdf.index[ind].boldRun)
+    df_taskonsets = pd.DataFrame(df_taskonsets)
 
-    stimcount = 0
-    for cond in conditions:
-        conddf = stimdf.loc[stimdf.trial_type==cond]
-        for ind in conddf.index:
-            trstart = int(conddf.startTRreal[ind])
-            duration = conddf.duration[ind]
-            trend = int(trstart + duration)
-            stim_mat[trstart:trend,stimcount] = 1.0
+    #### Now for each task iterate and create FIR matrix
+    fir_mat = []
+    task_ind = []
+    for task in np.unique(df_taskonsets.task.values):
+        task_fir_arr = np.zeros((np.sum(num_timepoints),blocklength + nRegsFIR))
+        taskdf = df_taskonsets.loc[df_taskonsets.task==task]
+        for run in np.unique(taskdf.run.values):
+            rundf = taskdf.loc[taskdf.run==run]
+            # count the TR at which each new run starts
+            # for example, if run == 1, np.sum(num_timepoints[:,run-1] equals 0
+            runstart_tr = np.sum(num_timepoints[:run-1]) 
+            runend_tr = np.sum(num_timepoints[:,run])
+            for i in rundf.index:
+                starttr = rundf.loc[i].startTRreal + runstart_tr
+                starttr = int(starttr)
+                for j in range(blocklength + nRegsFIR):
+                    # Make sure FIR regressor doesn't bleed to the next run
+                    if starttr+j<runend_tr:
+                        fir_mat[starttr + j, j] = 1
+        fir_mat.extend(task_fir_arr.T)
+        task_ind.extend(np.repeat(task,blocklenght+nRegsFIR))
 
-        stim_index.append(cond)
-        stimcount += 1 # go to next condition
-
-
-    ## 
-    if taskModel=='FIR':
-        ## TODO
-        # Convolve taskstim regressors based on SPM canonical HRF (likely period of task-induced activity)
-
-        ## First set up FIR design matrix
-        stim_index = []
-        taskStims_FIR = [] 
-        for stim in range(stim_mat.shape[1]):
-            taskStims_FIR.append([])
-            time_ind = np.where(stim_mat[:,stim]==1)[0]
-            blocks = _group_consecutives(time_ind) # Get blocks (i.e., sets of consecutive TRs)
-            # Identify the longest block - set FIR duration to longest block
-            maxRegsForBlocks = 0
-            for block in blocks:
-                if len(block) > maxRegsForBlocks: maxRegsForBlocks = len(block)
-            taskStims_FIR[stim] = np.zeros((stim_mat.shape[0],maxRegsForBlocks+nRegsFIR)) # Task timing for this condition is TR x length of block + FIR lag
-            stim_index.extend(np.repeat(stim,maxRegsForBlocks+nRegsFIR))
-        stim_index = np.asarray(stim_index)
-
-        ## Now fill in FIR design matrix
-        # Make sure to cut-off FIR models for each run separately
-        trcount = 0
-
-        for run in range(nRunsPerTask):
-            trstart = trcount
-            trend = trstart + nTRsPerRun
+    # Transpose to time x features/regressors
+    fir_mat = np.asarray(fir_mat).T
                 
-            for stim in range(stim_mat.shape[1]):
-                time_ind = np.where(stim_mat[:,stim]==1)[0]
-                blocks = _group_consecutives(time_ind) # Get blocks (i.e., sets of consecutive TRs)
-                for block in blocks:
-                    reg = 0
-                    for tr in block:
-                        # Set impulses for this run/task only
-                        if trstart < tr < trend:
-                            taskStims_FIR[stim][tr,reg] = 1
-                            reg += 1
-
-                        if not trstart < tr < trend: continue # If TR not in this run, skip this block
-
-                    # If TR is not in this run, skip this block
-                    if not trstart < tr < trend: continue
-
-                    # Set lag due to HRF
-                    for lag in range(1,nRegsFIR+1):
-                        # Set impulses for this run/task only
-                        if trstart < tr+lag < trend:
-                            taskStims_FIR[stim][tr+lag,reg] = 1
-                            reg += 1
-            trcount += nTRsPerRun
-        
-
-        taskStims_FIR2 = np.zeros((stim_mat.shape[0],1))
-        task_index = []
-        for stim in range(stim_mat.shape[1]):
-            task_index.extend(np.repeat(stim,taskStims_FIR[stim].shape[1]))
-            taskStims_FIR2 = np.hstack((taskStims_FIR2,taskStims_FIR[stim]))
-
-        taskStims_FIR2 = np.delete(taskStims_FIR2,0,axis=1)
-
-        #taskRegressors = np.asarray(taskStims_FIR)
-        taskRegressors = taskStims_FIR2
-    
-        # To prevent SVD does not converge error, make sure there are no columns with 0s
-        zero_cols = np.where(np.sum(taskRegressors,axis=0)==0)[0]
-        taskRegressors = np.delete(taskRegressors, zero_cols, axis=1)
-        stim_index = np.delete(stim_index, zero_cols)
-
-    elif taskModel=='canonical':
-        ## 
-        # Convolve taskstim regressors based on SPM canonical HRF (likely period of task-induced activity)
-        taskStims_HRF = np.zeros(stim_mat.shape)
-        spm_hrfTS = spm_hrf(trLength,oversampling=1)
-       
-
-        for stim in range(stim_mat.shape[1]):
-
-            # Perform convolution
-            tmpconvolve = np.convolve(stim_mat[:,stim],spm_hrfTS)
-            taskStims_HRF[:,stim] = tmpconvolve[:num_timepoints]
-
-
-        taskRegressors = taskStims_HRF.copy()
-    
-
     # Create temporal mask (skipping which frames?)
     output = {}
     # Commented out since we demean each run prior to loading data anyway
-    output['taskRegressors'] = taskRegressors
-    output['taskDesignMat'] = stim_mat
-    output['stimIndex'] = stim_index
+    output['taskRegressors'] = fir_mat 
+    output['stimIndex'] = task_ind
 
     return output
 
