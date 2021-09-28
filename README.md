@@ -35,7 +35,7 @@ Demo code (This repo): `scripts/rest_task_fMRI_demo.ipynb` (https://github.com/i
 
 Code requires nibabel, nipy, h5py
 
-# For advanced users
+# For advanced users (e.g., fMRI users familiar with preprocessing)
 ### For those who wish to preprocess and run GLMs themselves, the following code can be used as templates. A good knowledge of shell-scripting and python is required, along with best practices for preprocessing. 
 
 #### See QuNex documentation for preprocessing, and recommended post-processing/nuisance regression references:
