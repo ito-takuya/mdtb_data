@@ -245,18 +245,19 @@ def loadTaskTimingFIR(sess, num_timepoints, nRegsFIR=20):
     df_taskonsets['run'] = []
     # Identify all instruction screens (i.e., the beginning of task blocks)
     stimdf = stimdf.reset_index() # Get new index
-    instruction_ind = stimdf.loc[stimdf.taskName=='instruct'].index
+    instruction_ind = stimdf.loc[stimdf.trial_type=='Instruct'].index
     # Now add 1 to instruction index, since that's when the task starts
     task_ind = instruction_ind + 1
     for ind in task_ind:
-        df_taskonsets['task'].append(stimdf.index[ind].taskName)
-        df_taskonsets['onset'].append(stimdf.index[ind].startTRreal)
-        df_taskonsets['run'].append(stimdf.index[ind].boldRun)
+        df_taskonsets['task'].append(stimdf.loc[ind].taskName)
+        df_taskonsets['onset'].append(stimdf.loc[ind].startTRreal)
+        df_taskonsets['run'].append(stimdf.loc[ind].boldRun)
     df_taskonsets = pd.DataFrame(df_taskonsets)
 
     #### Now for each task iterate and create FIR matrix
     fir_mat = []
     task_ind = []
+    tr_labeling = np.empty((np.sum(num_timepoints),),dtype=object) # Variable to TRs during a specific task
     for task in np.unique(df_taskonsets.task.values):
         task_fir_arr = np.zeros((np.sum(num_timepoints),blocklength + nRegsFIR))
         taskdf = df_taskonsets.loc[df_taskonsets.task==task]
@@ -265,16 +266,22 @@ def loadTaskTimingFIR(sess, num_timepoints, nRegsFIR=20):
             # count the TR at which each new run starts
             # for example, if run == 1, np.sum(num_timepoints[:,run-1] equals 0
             runstart_tr = np.sum(num_timepoints[:run-1]) 
-            runend_tr = np.sum(num_timepoints[:,run])
+            runend_tr = np.sum(num_timepoints[:run])
             for i in rundf.index:
-                starttr = rundf.loc[i].startTRreal + runstart_tr
+                starttr = rundf.loc[i].onset + runstart_tr
                 starttr = int(starttr)
                 for j in range(blocklength + nRegsFIR):
                     # Make sure FIR regressor doesn't bleed to the next run
                     if starttr+j<runend_tr:
-                        fir_mat[starttr + j, j] = 1
+                        task_fir_arr[int(starttr + j), int(j)] = 1
+
+                #### Now label TRs without the FIR lag (so no overlapping labels)
+                for j in range(blocklength):
+                    if starttr+j<runend_tr:
+                        tr_labeling[int(starttr+j)] = task
+
         fir_mat.extend(task_fir_arr.T)
-        task_ind.extend(np.repeat(task,blocklenght+nRegsFIR))
+        task_ind.extend(np.repeat(task,blocklength+nRegsFIR))
 
     # Transpose to time x features/regressors
     fir_mat = np.asarray(fir_mat).T
@@ -284,6 +291,7 @@ def loadTaskTimingFIR(sess, num_timepoints, nRegsFIR=20):
     # Commented out since we demean each run prior to loading data anyway
     output['taskRegressors'] = fir_mat 
     output['stimIndex'] = task_ind
+    output['task_time_labels'] = tr_labeling
 
     return output
 

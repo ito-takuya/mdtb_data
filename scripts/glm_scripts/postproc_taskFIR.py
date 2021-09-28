@@ -103,15 +103,8 @@ def run(args):
                 tMask[:framesToSkip] = 0
                 tMask = np.asarray(tMask,dtype=bool)
 
-                # note remove temporal mask early so we can detrend each run separately
-                rundata = rundata[tMask,:]
-                rundata = signal.detrend(rundata,axis=0,type='constant')
-                rundata = signal.detrend(rundata,axis=0,type='linear')
-
                 # Load in nuisance regressors and apply tmask
                 nuisregs = pptools.loadNuisanceRegressors(sess,run_id,num_timepoints,model=model)
-                # Skip nuis regs frames
-                nuisregs = nuisregs[tMask,:]
 
                 all_data.extend(rundata)
                 all_nuisregs.extend(nuisregs)
@@ -124,13 +117,30 @@ def run(args):
             all_numtp = np.asarray(all_numtp)
 
             # Skip frames
-            nROIs = data.shape[1]
+            nROIs = all_data.shape[1]
 
             #  Load in task timing file
-            tasktiming = pptools.loadTaskTimingFIR(sess, all_nuisregs, nRegsFIR=20)
-            task_regs = tasktiming['taskRegressors'][all_tMask,:]
+            tasktiming = pptools.loadTaskTimingFIR(sess, all_numtp, nRegsFIR=20)
             regression_index = np.asarray(tasktiming['stimIndex'])
+            tasktiming_labels = tasktiming['task_time_labels']
+            
+            # Remove first 5 frames of each run
+            all_data = all_data[all_tMask,:]
+            tasktiming_labels = tasktiming_labels[all_tMask]
+            all_nuisregs = all_nuisregs[all_tMask,:]
+            task_regs = tasktiming['taskRegressors'][all_tMask,:]
             allRegressors = np.hstack((task_regs,all_nuisregs))
+
+            # Remove mean and detrend
+            starttr = 0
+            endtr = 0
+            for i in all_numtp:
+                endtr += i - framesToSkip 
+                # note remove temporal mask early so we can detrend each run separately
+                all_data[starttr:endtr,:] = signal.detrend(all_data[starttr:endtr,:],axis=0,type='constant')
+                all_data[starttr:endtr,:] = signal.detrend(all_data[starttr:endtr,:],axis=0,type='linear')
+                starttr += i - framesToSkip
+
 
 
             reg = LinearRegression().fit(allRegressors,all_data)
@@ -149,6 +159,7 @@ def run(args):
 
             # Save out index file that indicates each beta coef with a different task condition
             np.savetxt(outputfilename + '_taskIndex.csv', regression_index,delimiter=',',fmt ='% s')
+            np.savetxt(outputfilename + '_tasktiminglabels.csv', tasktiming_labels, delimiter=',',fmt = '% s')
             h5f = h5py.File(outputfilename + '.h5','a')
             outname1 = 'residuals'
             outname2 = 'betas'
@@ -160,6 +171,7 @@ def run(args):
                 h5f.create_dataset(outname1,data=residual_ts)
                 h5f.create_dataset(outname2,data=betas)
             h5f.close()
+
 
 
 if __name__ == '__main__':
