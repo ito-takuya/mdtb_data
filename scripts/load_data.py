@@ -11,6 +11,7 @@ import sklearn
 import sklearn.svm as svm
 
 basedir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/'
+datadir = basedir  + 'derivatives/postprocessing/'
 analysistools = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/'
 
 networkdef = np.loadtxt(analysistools + '/AnalysisTools/ColeAnticevicNetPartition/cortex_parcel_network_assignments.txt')
@@ -46,6 +47,7 @@ OrderedNetworks = ['VIS1','VIS2','SMN','CON','DAN','LAN','FPN','AUD','DMN','PMM'
 
 glasserfilename = analysistools + '/AnalysisTools/Q1-Q6_RelatedParcellation210.LR.CorticalAreas_dil_Colors.32k_fs_RL.dlabel.nii'
 glasser = np.squeeze(nib.load(glasserfilename).get_fdata())
+
 
 def loadTaskActivations(sess, run, space='vertex', model='canonical'):
     """
@@ -110,6 +112,32 @@ def loadrsfMRI(subj,space='parcellated'):
         print('\tError')
 
     return data
+
+
+def loadTaskfMRI_FIR_Timeseries(session,space='parcellated'):
+    """
+    Load in task-state residuals after FIR modeling on all tasks
+    
+    ## PARAMETERS
+    session 
+        Subject-specific session ID as a string. (Example, "02_a1")
+    space
+        Spatial format to import data: ['parcellated', 'vertex'] # parcellated produces Glasser parcellated data; Vertex produces vertex-wise resting-state data
+
+    ## RETURNS
+    data
+        space x time 2d matrix
+    tasktiming_labels
+        Provides a 1d array that describes which task occurs during which timepoints ("None" indicates that it's either inter-trial interval or an encoding period)
+    """
+    h5f = h5py.File(datadir + '/fir/' + session + '_tfMRI_parcellated_TaskBlockFIR_qunex_allruns.h5','r')
+    ts = h5f['residuals'][:].T
+    h5f.close()
+
+    tasktiming_labels = np.loadtxt(datadir + '/fir/' + session + '_tfMRI_parcellated_TaskBlockFIR_qunex_allruns_tasktiminglabels.csv',dtype=object)
+
+    return ts.T, tasktiming_labels
+
 
 def getDimensionality(data):
     """
