@@ -22,6 +22,10 @@ Local code repo (which is synced to this GitHub repo): `/gpfs/loomis/pi/n3/Studi
 # Demo code to load in processed resting-state and task-state fMRI
 #### Note that processed task-state fMRI data has been processed using finite impulse response modeling (FIR) for task-state correlation/functional connectivity analyses, following procedures in Cole et al. (2019) NeuroImage http://www.sciencedirect.com/science/article/pii/S1053811918322043
 
+Task conditions that are modeled in FIR are at the block-level, and so there are only 26 conditions for each task-specific time series.
+
+Processed data is in parcellated time series (vertex-wise data to come) using the Glasser et al. (2016) parcellation scheme (http://www.nature.com/doifinder/10.1038/nature18933)
+
 Demo code (Grace): `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/docs/scripts/rest_task_fMRI_demo.ipynb`
 
 Demo code (This repo): `scripts/rest_task_fMRI_demo.ipynb`
