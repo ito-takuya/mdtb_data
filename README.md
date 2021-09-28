@@ -34,3 +34,21 @@ Demo code (This repo): `scripts/rest_task_fMRI_demo.ipynb` (https://github.com/i
 #### Helpful to start with anaconda python environment
 
 Code requires nibabel, nipy, h5py
+
+# For advanced users
+#### For those who wish to preprocess and run GLMs themselves, the following code can be used as templates
+
+#### Preprocessing from BIDS was implemented using QuNex. 
+
+Qunex shell script: `scripts/preproc_qunex_turnkey_v2.sh` 
+
+#### Postprocessing (i.e., nuisance regression for resting-state data and task GLMs) were implemented with custom python code. 
+
+Resting-state nuisance regression: `scripts/glm_scripts/postproc_rest.py`
+
+Task-state FIR regression (for FC and timescale analyses): `scripts/glm_scripts/postproc_taskFIR.py`
+
+Task-state GLM activation estimation (uses a beta series type model, see Rissman et al. (2004), NeuroImage 10.1016/j.neuroimage.2004.06.035: `scripts/glm_scripts/postproc_taskbetaseries.py`
+
+Generic post-processing tools: `scripts/glm_scripts/postproc_tools.py`
+
