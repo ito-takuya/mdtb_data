@@ -28,7 +28,7 @@ Processed data is in parcellated time series (vertex-wise data to come) using th
 
 Demo code (Grace): `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/docs/scripts/rest_task_fMRI_demo.ipynb`
 
-Demo code (This repo): `scripts/rest_task_fMRI_demo.ipynb`
+Demo code (This repo): `scripts/rest_task_fMRI_demo.ipynb` (https://github.com/ito-takuya/mdtb_data/blob/main/scripts/rest_task_fMRI_demo.ipynb)
 
 # Useful python dependencies (python version 3.8)
 #### Helpful to start with anaconda python environment
