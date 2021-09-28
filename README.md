@@ -19,6 +19,12 @@ Fully preprocessed data: Includes QuNex preprocessed + post-processed nuisance r
 
 Local code repo (which is synced to this GitHub repo): `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/docs/`
 
+# Demo code to load in processed resting-state and task-state fMRI
+#### Note that processed task-state fMRI data has been processed using finite impulse response modeling (FIR) for task-state correlation/functional connectivity analyses, following procedures in Cole et al. (2019) NeuroImage http://www.sciencedirect.com/science/article/pii/S1053811918322043
+
+Demo code (Grace): `/gpfs/loomis/pi/n3/Studies/MurrayLab/taku/mdtb_data/docs/scripts/rest_task_fMRI_demo.ipynb`
+Demo code (This repo): `scripts/rest_task_fMRI_demo.ipynb`
+
 # Useful python dependencies (python version 3.8)
 #### Helpful to start with anaconda python environment
 
