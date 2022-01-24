@@ -34,3 +34,27 @@ Demo code (This repo): `scripts/rest_task_fMRI_demo.ipynb` (https://github.com/i
 #### Helpful to start with anaconda python environment
 
 Code requires nibabel, nipy, h5py
+
+# For advanced users (e.g., fMRI users familiar with preprocessing)
+### For those who wish to preprocess and run GLMs themselves, the following code can be used as templates. A good knowledge of shell-scripting and python is required, along with best practices for preprocessing. 
+
+#### See QuNex documentation for preprocessing, and recommended post-processing/nuisance regression references:
+
+Ciric, R., Wolf, D.H., Power, J.D., Roalf, D.R., Baum, G.L., Ruparel, K., Shinohara, R.T., Elliott, M.A., Eickhoff, S.B., Davatzikos, C., Gur, R.C., Gur, R.E., Bassett, D.S., Satterthwaite, T.D., 2017. Benchmarking of participant-level confound regression strategies for the control of motion artifact in studies of functional connectivity. NeuroImage 154, 174–187. https://doi.org/10.1016/j.neuroimage.2017.03.020
+
+Cole, M.W., Ito, T., Schultz, D., Mill, R., Chen, R., Cocuzza, C., 2019. Task activations produce spurious but systematic inflation of task functional connectivity estimates. NeuroImage 189, 1–18. https://doi.org/10.1016/j.neuroimage.2018.12.054
+
+#### Preprocessing from BIDS was implemented using QuNex. 
+
+Qunex shell script: `scripts/preproc_qunex_turnkey_v2.sh` 
+
+#### Postprocessing (i.e., nuisance regression for resting-state data and task GLMs) were implemented with custom python code. 
+
+Resting-state nuisance regression: `scripts/glm_scripts/postproc_rest.py`
+
+Task-state FIR regression (for FC and timescale analyses): `scripts/glm_scripts/postproc_taskFIR.py`
+
+Task-state GLM activation estimation (uses a beta series type model, see Rissman et al. (2004), NeuroImage 10.1016/j.neuroimage.2004.06.035: `scripts/glm_scripts/postproc_taskbetaseries.py`
+
+Generic post-processing tools: `scripts/glm_scripts/postproc_tools.py`
+
