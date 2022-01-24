@@ -34,6 +34,7 @@ nuis_reg_dir = datadir + 'nuisanceRegressors/'
 def loadTaskTimingCanonical(sess, run, num_timepoints, nRegsFIR=20):
     """
     Loads task timings for each run separately
+    Does this for each trial type separately (45 conditions)
     """
     trLength = 1.0
     subj = sess[:2] # first 2 characters form the subject ID
@@ -292,6 +293,90 @@ def loadTaskTimingFIR(sess, num_timepoints, nRegsFIR=20):
     output['taskRegressors'] = fir_mat 
     output['stimIndex'] = task_ind
     output['task_time_labels'] = tr_labeling
+
+    return output
+
+def loadTaskTimingBetaSeriesWholeBlock(sess, run, num_timepoints):
+    """
+    Added: 1/24/22 -- for signalNoiseFC project
+
+    Loads the task timings for each task block (excluding the instruction period)
+    This a beta series model, but each block is it's own beta
+    Does not isolate individual trials/conditions within a task
+
+    Parameters:
+
+    subj 
+        subject ID (as a string, e.g., '02')
+    run
+        run number
+    num_timepoints
+        an array containing number of time points in each run
+    """
+
+    blocklength = 30 # length of a task block
+    trLength = 1.0
+    stimdf = pd.DataFrame()
+    subj = sess[:2] # first 2 characters form the subject ID
+    sess_id = sess[-2:] # last 2 characters form the session
+    tasktime_dir = datadir + 'sessions/' + sess + '/bids/func/'
+    stimfile = glob.glob(tasktime_dir + 'sub-' + subj + '_ses-' + sess_id + '*' + str(run) + '_events.tsv')[0]
+    stimdf = stimdf.append(pd.read_csv(stimfile,sep='\t'))
+
+    #### Now find all task block onsets by identifying 
+    df_taskonsets = {}
+    df_taskonsets['task'] = []
+    df_taskonsets['onset'] = []
+    # Identify all instruction screens (i.e., the beginning of task blocks)
+    stimdf = stimdf.reset_index() # Get new index
+    instruction_ind = stimdf.loc[stimdf.trial_type=='Instruct'].index
+    # Now add 1 to instruction index, since that's when the task starts
+    task_ind = instruction_ind + 1
+    for ind in task_ind:
+        df_taskonsets['task'].append(stimdf.loc[ind].taskName)
+        df_taskonsets['onset'].append(stimdf.loc[ind].startTRreal)
+    df_taskonsets = pd.DataFrame(df_taskonsets)
+
+
+    #### Name all tasks
+    tasks = np.unique(df_taskonsets.task.values)
+
+    stim_mat = np.zeros((num_timepoints,len(df_taskonsets)))
+    stim_index = []
+
+    stimcount = 0
+    for task in tasks:
+        taskdf = df_taskonsets.loc[df_taskonsets.task==task]
+        for ind in taskdf.index:
+            trstart = int(df_taskonsets.onset[ind])
+            trend = int(trstart + blocklength)
+            stim_mat[trstart:trend,stimcount] = 1.0
+
+            stim_index.append(task)
+            stimcount += 1 # go to next condition
+
+                
+    #### HRF Convolution
+    # Convolve taskstim regressors based on SPM canonical HRF (likely period of task-induced activity)
+    taskStims_HRF = np.zeros(stim_mat.shape)
+    spm_hrfTS = spm_hrf(trLength,oversampling=1)
+   
+
+    for stim in range(stim_mat.shape[1]):
+
+        # Perform convolution
+        tmpconvolve = np.convolve(stim_mat[:,stim],spm_hrfTS)
+        taskStims_HRF[:,stim] = tmpconvolve[:num_timepoints]
+
+
+    taskRegressors = taskStims_HRF.copy()
+
+    # Create temporal mask (skipping which frames?)
+    output = {}
+    # Commented out since we demean each run prior to loading data anyway
+    output['taskRegressors'] = taskRegressors 
+    output['stimIndex'] = stim_index
+    output['taskDesignMat'] = stim_mat
 
     return output
 
