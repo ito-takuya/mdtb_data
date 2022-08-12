@@ -22,7 +22,8 @@ import glob
 
 ## Define GLOBAL variables (variables accessible to all functions
 # Define base data directory
-datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/'
+#datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/'
+datadir = '/home/ti236/taku/mdtb_data/qunex_mdtb/'
 # Define number of frames to skip
 framesToSkip = 5
 # Define the *output* directory for nuisance regressors
@@ -580,7 +581,7 @@ def loadNuisanceRegressors(sess, run, num_timepoints, model='qunex', spikeReg=Fa
     
     return nuisanceRegressors
 
-def loadRawParcellatedData(sess,run,datadir='/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/sessions/',atlas='glasser'):
+def loadRawParcellatedData(sess,run,datadir='/home/ti236/taku/mdtb_data/qunex_mdtb/sessions/',atlas='glasser'):
     """
     Load in parcellated data for given session and run
     """
@@ -593,7 +594,7 @@ def loadRawParcellatedData(sess,run,datadir='/gpfs/loomis/project/n3/Studies/Mur
     data = nib.load(datafile).get_data()
     return data
 
-def loadRawVertexData(sess,run,datadir='/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/sessions/'):
+def loadRawVertexData(sess,run,datadir='/home/ti236/taku/mdtb_data/qunex_mdtb/sessions/'):
     """
     Load in surface vertex data for given session and run
     """

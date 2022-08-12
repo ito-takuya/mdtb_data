@@ -27,7 +27,8 @@ import postproc_tools as pptools
 
 ## Define GLOBAL variables (variables accessible to all functions
 # Define base data directory
-datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/'
+#datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/'
+datadir = '/home/ti236/taku/mdtb_data/qunex_mdtb/'
 # Define number of frames to skip
 framesToSkip = 5
 # Define the *output* directory for nuisance regressors
