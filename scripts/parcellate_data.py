@@ -9,7 +9,10 @@ import matplotlib.pyplot as plt
 import os
 
 #Setting the parcel files to be the 360 Glasser2016 cortical parcels
-cabnp_dir='/home/ti236/AnalysisTools/ColeAnticevicNetPartition/'
+homedir = os.path.expanduser('~') 
+homedir = homedir + '/data/'
+datadir = homedir + 'mdtb_data/qunex_mdtb/'
+cabnp_dir= homedir + '/AnalysisTools/ColeAnticevicNetPartition/'
 L_parcelCIFTIFile=cabnp_dir + 'SeparateHemispheres/Q1-Q6_RelatedValidation210.L.CorticalAreas_dil_Final_Final_Areas_Group_Colors.32k_fs_LR.dlabel.nii'
 R_parcelCIFTIFile=cabnp_dir + 'SeparateHemispheres/Q1-Q6_RelatedValidation210.R.CorticalAreas_dil_Final_Final_Areas_Group_Colors.32k_fs_LR.dlabel.nii'
 glasser=cabnp_dir + '../Q1-Q6_RelatedParcellation210.LR.CorticalAreas_dil_Colors.32k_fs_RL.dlabel.nii'
@@ -20,7 +23,6 @@ sessions=['02_a1','02_a2','02_b1','02_b2','03_a1','03_a2','03_b1','03_b2','04_a1
 
 runnames=['bold1','bold2','bold3','bold4','bold5','bold6','bold7','bold8','bold9','bold10']
 
-datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/'
 
 for sess in sessions:
     for run in runnames:
