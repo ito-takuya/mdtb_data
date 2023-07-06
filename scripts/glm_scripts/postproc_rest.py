@@ -6,7 +6,8 @@
 import numpy as np
 import os
 import glob
-from nipy.modalities.fmri.hemodynamic_models import spm_hrf
+#from nipy.modalities.fmri.hemodynamic_models import spm_hrf
+from nilearn.glm.first_level import spm_hrf
 import multiprocessing as mp
 import h5py
 import scipy.stats as stats
@@ -25,7 +26,10 @@ import postproc_tools as pptools
 
 ## Define GLOBAL variables (variables accessible to all functions
 # Define base data directory
-datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/'
+#datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/'
+homedir = os.path.expanduser('~') 
+homedir = homedir + '/data/'
+datadir = homedir + 'mdtb_data/qunex_mdtb/'
 # Define number of frames to skip
 framesToSkip = 5
 # Define the *output* directory for nuisance regressors

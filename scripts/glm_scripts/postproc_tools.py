@@ -6,7 +6,8 @@
 import numpy as np
 import os
 import glob
-from nipy.modalities.fmri.hemodynamic_models import spm_hrf
+#from nipy.modalities.fmri.hemodynamic_models import spm_hrf
+from nilearn.glm.first_level import spm_hrf
 import multiprocessing as mp
 import h5py
 import scipy.stats as stats
@@ -23,7 +24,10 @@ import glob
 ## Define GLOBAL variables (variables accessible to all functions
 # Define base data directory
 #datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/mdtb_data/qunex_mdtb/'
-datadir = '/home/ti236/taku/mdtb_data/qunex_mdtb/'
+#datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/'
+homedir = os.path.expanduser('~') 
+homedir = homedir + '/data/'
+datadir = homedir + 'mdtb_data/qunex_mdtb/'
 # Define number of frames to skip
 framesToSkip = 5
 # Define the *output* directory for nuisance regressors
@@ -238,7 +242,8 @@ def loadTaskTimingFIR(sess, num_timepoints, nRegsFIR=20):
     for run in range(1,9):
         tasktime_dir = datadir + 'sessions/' + sess + '/bids/func/'
         stimfile = glob.glob(tasktime_dir + 'sub-' + subj + '_ses-' + sess_id + '*' + str(run) + '_events.tsv')[0]
-        stimdf = stimdf.append(pd.read_csv(stimfile,sep='\t'))
+        #stimdf = stimdf.append(pd.read_csv(stimfile,sep='\t'))
+        stimdf = pd.concat([stimdf, pd.read_csv(stimfile,sep='\t')],ignore_index=True)
 
     #### Now find all task block onsets by identifying 
     df_taskonsets = {}
@@ -322,7 +327,8 @@ def loadTaskTimingBetaSeriesWholeBlock(sess, run, num_timepoints):
     sess_id = sess[-2:] # last 2 characters form the session
     tasktime_dir = datadir + 'sessions/' + sess + '/bids/func/'
     stimfile = glob.glob(tasktime_dir + 'sub-' + subj + '_ses-' + sess_id + '*' + str(run) + '_events.tsv')[0]
-    stimdf = stimdf.append(pd.read_csv(stimfile,sep='\t'))
+    #stimdf = stimdf.append(pd.read_csv(stimfile,sep='\t'))
+    stimdf = pd.concat([stimdf, pd.read_csv(stimfile,sep='\t')],ignore_index=True)
 
     #### Now find all task block onsets by identifying 
     df_taskonsets = {}
@@ -581,7 +587,7 @@ def loadNuisanceRegressors(sess, run, num_timepoints, model='qunex', spikeReg=Fa
     
     return nuisanceRegressors
 
-def loadRawParcellatedData(sess,run,datadir='/home/ti236/taku/mdtb_data/qunex_mdtb/sessions/',atlas='glasser'):
+def loadRawParcellatedData(sess,run,datadir=datadir+'/sessions/',atlas='glasser'):
     """
     Load in parcellated data for given session and run
     """
@@ -591,13 +597,13 @@ def loadRawParcellatedData(sess,run,datadir='/home/ti236/taku/mdtb_data/qunex_md
         datafile = datadir + sess + '/images/functional/' + run + '_SchaeferAtlas.LR.Parcels.32k_fs_LR.ptseries.nii'
     elif atlas=='gordon':
         datafile = datadir + sess + '/images/functional/' + run + '_GordonAtlas.LR.Parcels.32k_fs_LR.ptseries.nii'
-    data = nib.load(datafile).get_data()
+    data = nib.load(datafile).get_fdata()
     return data
 
-def loadRawVertexData(sess,run,datadir='/home/ti236/taku/mdtb_data/qunex_mdtb/sessions/'):
+def loadRawVertexData(sess,run,datadir=datadir+'/sessions/'):
     """
     Load in surface vertex data for given session and run
     """
     datafile = datadir + sess + '/images/functional/' + run + '_Atlas.dtseries.nii'
-    data = nib.load(datafile).get_data()
+    data = nib.load(datafile).get_fdata()
     return data

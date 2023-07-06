@@ -6,7 +6,8 @@
 import numpy as np
 import os
 import glob
-from nipy.modalities.fmri.hemodynamic_models import spm_hrf
+#from nipy.modalities.fmri.hemodynamic_models import spm_hrf
+from nilearn.glm.first_level import spm_hrf
 import multiprocessing as mp
 import h5py
 import scipy.stats as stats
@@ -25,7 +26,10 @@ import postproc_tools as pptools
 
 ## Define GLOBAL variables (variables accessible to all functions
 # Define base data directory
-datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/'
+#datadir = '/gpfs/loomis/project/n3/Studies/MurrayLab/taku/multiTaskVAE/qunexMultiTaskVAE/'
+homedir = os.path.expanduser('~') 
+homedir = homedir + '/data/'
+datadir = homedir + 'mdtb_data/qunex_mdtb/'
 # Define number of frames to skip
 framesToSkip = 5
 # Define the *output* directory for nuisance regressors
@@ -41,6 +45,7 @@ sessions=['02_a1','02_a2','02_b1','02_b2','03_a1','03_a2','03_b1','03_b2','04_a1
 subIDs=['02','03','04','06','08','09','10','12','14','15','18','20','22','25','27','29','31','17','19','21','24','26','28','30']
 sessionIDs=['_a1','_a2','_b1','_b2']
 outputdir = datadir + '../derivatives/postprocessing/fir/'
+if not os.path.exists(outputdir): os.makedirs(outputdir)
 
 
 parser = argparse.ArgumentParser('./main.py', description='Run postprocessing')
